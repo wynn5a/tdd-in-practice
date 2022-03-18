@@ -6,7 +6,5 @@ package io.github.wynn5a.exception;
  */
 public class UnsupportedTypeException extends RuntimeException {
 
-  public UnsupportedTypeException(String type) {
-
-  }
+  public UnsupportedTypeException(String type) {}
 }

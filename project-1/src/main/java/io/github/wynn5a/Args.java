@@ -7,6 +7,7 @@ import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author wynn5a
@@ -30,9 +31,9 @@ public class Args {
   }
 
   private static final Map<Class<?>, OptionParser> PARSERS = Map.of(
-      int.class, new IntegerOptionParser(),
+      int.class, new SingleValueOptionParser<>(Integer::parseInt),
       boolean.class, new BooleanOptionParser(),
-      String.class, new StringOptionParser());
+      String.class, new SingleValueOptionParser<>(Function.identity()));
 
   private static OptionParser getOptionParser(Class<?> type) {
     if (!PARSERS.containsKey(type)) {
