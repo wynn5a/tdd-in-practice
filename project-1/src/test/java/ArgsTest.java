@@ -25,9 +25,7 @@ public class ArgsTest {
     Assertions.assertFalse(option.logging());
   }
 
-  public static record BooleanOption(@Option("l") boolean logging) {
-
-  }
+  public record BooleanOption(@Option("l") boolean logging) { }
 
 
   //int: -p
@@ -37,9 +35,7 @@ public class ArgsTest {
     assertEquals(options.port(), 8080);
   }
 
-  public static record IntegerOptions(@Option("p") int port) {
-
-  }
+  public record IntegerOptions(@Option("p") int port) { }
 
   //-d: string
   @Test
@@ -48,9 +44,7 @@ public class ArgsTest {
     assertEquals(options.directory(), "/usr/logs");
   }
 
-  public static record StringOptions(@Option("d") String directory) {
-
-  }
+  public record StringOptions(@Option("d") String directory) { }
 
 
   // -l -p 8080 -d /usr/logs
@@ -62,7 +56,5 @@ public class ArgsTest {
     assertEquals(options.directory(), "/usr/logs");
   }
 
-  public static record Options(@Option("l") boolean logging, @Option("p") int port, @Option("d") String directory) {
-
-  }
+  public record Options(@Option("l") boolean logging, @Option("p") int port, @Option("d") String directory) { }
 }
