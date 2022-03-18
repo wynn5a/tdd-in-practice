@@ -1,0 +1,4 @@
+rootProject.name = 'tdd-in-practice'
+
+include "project-1"
+
