@@ -15,9 +15,9 @@ import java.util.function.Function;
  */
 public class Args {
 
-  public static <T> T parse(Class<T> optionsClass, String... args) {
+  public static <T> T parse(Class<T> aClass, String... args) {
     try {
-      Constructor<?> constructor = optionsClass.getDeclaredConstructors()[0];
+      Constructor<?> constructor = aClass.getDeclaredConstructors()[0];
       Parameter[] parameters = constructor.getParameters();
       Object[] values = Arrays.stream(parameters).map(parameter -> parse(parameter, Arrays.asList(args))).toArray();
       return (T) constructor.newInstance(values);
@@ -31,9 +31,9 @@ public class Args {
   }
 
   private static final Map<Class<?>, OptionParser> PARSERS = Map.of(
-      int.class, new SingleValueOptionParser<>(Integer::parseInt),
+      int.class, new SingleValueOptionParser<>(0, Integer::parseInt),
       boolean.class, new BooleanOptionParser(),
-      String.class, new SingleValueOptionParser<>(Function.identity()));
+      String.class, new SingleValueOptionParser<>("", Function.identity()));
 
   private static OptionParser getOptionParser(Class<?> type) {
     if (!PARSERS.containsKey(type)) {
