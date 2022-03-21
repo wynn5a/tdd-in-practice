@@ -1,9 +1,7 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.github.wynn5a.Args;
 import io.github.wynn5a.BooleanOptionParser;
-import io.github.wynn5a.Option;
 import io.github.wynn5a.exception.TooManyArgumentsException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -14,6 +12,7 @@ import org.junit.jupiter.api.Test;
  * @date 2022/3/21
  */
 public class BooleanOptionParserTest {
+
   //bool: -l
   @Test
   public void should_parse_boolean_option_to_true_if_flag_present() {
