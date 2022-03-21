@@ -1,5 +1,6 @@
 package io.github.wynn5a;
 
+import io.github.wynn5a.exception.IllegalOptionException;
 import io.github.wynn5a.exception.UnsupportedTypeException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -19,18 +20,22 @@ public class Args {
     try {
       Constructor<?> constructor = aClass.getDeclaredConstructors()[0];
       Parameter[] parameters = constructor.getParameters();
-      Object[] values = Arrays.stream(parameters).map(parameter -> parse(parameter, Arrays.asList(args))).toArray();
+      Object[] values = Arrays.stream(parameters).map(parameter -> parseOption(parameter, Arrays.asList(args))).toArray();
       return (T) constructor.newInstance(values);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private static Object parse(Parameter parameter, List<String> args) {
-    return getOptionParser(parameter.getType()).parse(args, parameter.getDeclaredAnnotation(Option.class));
+  private static Object parseOption(Parameter parameter, List<String> args) {
+    Option option = parameter.getDeclaredAnnotation(Option.class);
+    if (option == null){
+      throw new IllegalOptionException(parameter.getName());
+    }
+    return getOptionParser(parameter.getType()).parse(args, option);
   }
 
-  private static final Map<Class<?>, OptionParser> PARSERS = Map.of(
+  private static final Map<Class<?>, OptionParser<?>> PARSERS = Map.of(
       int.class, new SingleValueOptionParser<>(0, Integer::parseInt),
       boolean.class, new BooleanOptionParser(),
       String.class, new SingleValueOptionParser<>("", Function.identity()));
