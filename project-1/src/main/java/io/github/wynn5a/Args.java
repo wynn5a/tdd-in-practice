@@ -20,7 +20,8 @@ public class Args {
     try {
       Constructor<?> constructor = aClass.getDeclaredConstructors()[0];
       Parameter[] parameters = constructor.getParameters();
-      Object[] values = Arrays.stream(parameters).map(parameter -> parseOption(parameter, Arrays.asList(args))).toArray();
+      Object[] values = Arrays.stream(parameters).map(parameter -> parseOption(parameter, Arrays.asList(args)))
+                              .toArray();
       return (T) constructor.newInstance(values);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
@@ -29,18 +30,18 @@ public class Args {
 
   private static Object parseOption(Parameter parameter, List<String> args) {
     Option option = parameter.getDeclaredAnnotation(Option.class);
-    if (option == null){
+    if (option == null) {
       throw new IllegalOptionException(parameter.getName());
     }
     return getOptionParser(parameter.getType()).parse(args, option);
   }
 
   private static final Map<Class<?>, OptionParser<?>> PARSERS = Map.of(
-      int.class, new SingleValueOptionParser<>(0, Integer::parseInt),
-      boolean.class, new BooleanOptionParser(),
-      String.class, new SingleValueOptionParser<>("", Function.identity()));
+      int.class, OptionParserFactory.unary(0, Integer::parseInt),
+      boolean.class, OptionParserFactory.bool(),
+      String.class, OptionParserFactory.unary("", Function.identity()));
 
-  private static OptionParser getOptionParser(Class<?> type) {
+  private static OptionParser<?> getOptionParser(Class<?> type) {
     if (!PARSERS.containsKey(type)) {
       throw new UnsupportedTypeException(type.getCanonicalName());
     }

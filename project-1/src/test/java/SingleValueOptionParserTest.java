@@ -3,7 +3,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.wynn5a.Option;
-import io.github.wynn5a.SingleValueOptionParser;
+import io.github.wynn5a.OptionParserFactory;
 import io.github.wynn5a.exception.InsufficientArgumentException;
 import io.github.wynn5a.exception.TooManyArgumentsException;
 import java.lang.annotation.Annotation;
@@ -44,36 +44,35 @@ public class SingleValueOptionParserTest {
     var parsed = new Object();
     Function<String, Object> parser = i -> parsed;
     var defaultValue = "whatever";
-    assertSame(parsed, new SingleValueOptionParser<>(defaultValue, parser).parse(List.of("-p", "8080"), option("p")));
+    assertSame(parsed, OptionParserFactory.unary(defaultValue, parser).parse(List.of("-p", "8080"), option("p")));
   }
 
   @Test
   public void should_get_int_value_from_options() {
-    Integer option = new SingleValueOptionParser<>(0, Integer::parseInt)
-        .parse(List.of("-p", "8080"), option("p"));
-    assertEquals(option, 8080);
+    Integer option = OptionParserFactory.unary(0, Integer::parseInt).parse(List.of("-p", "8080"), option("p"));
+    assertEquals(8080, option);
   }
 
   @Test
   public void should_get_string_value_from_options() {
-    String option = new SingleValueOptionParser<>("", Function.identity())
-        .parse(List.of("-d", "/usr/logs"), option("d"));
-    assertEquals(option, "/usr/logs");
+    String option = OptionParserFactory.unary("", Function.identity())
+                                       .parse(List.of("-d", "/usr/logs"), option("d"));
+    assertEquals("/usr/logs", option);
   }
 
   //sad path
   @Test
   public void should_not_accept_extra_argument_for_int_option() {
     TooManyArgumentsException e = assertThrows(TooManyArgumentsException.class,
-        () -> new SingleValueOptionParser<>(0, Integer::parseInt).parse(List.of("-p", "8080", "8081"), option("p")));
+        () -> OptionParserFactory.unary(0, Integer::parseInt).parse(List.of("-p", "8080", "8081"), option("p")));
     assertEquals("p", e.getOption());
   }
 
   @Test
   public void should_not_accept_extra_argument_for_string_option() {
     TooManyArgumentsException e = assertThrows(TooManyArgumentsException.class,
-        () -> new SingleValueOptionParser<>("", Function.identity())
-            .parse(List.of("-d", "/usr/logs", "/var/logs"), option("d")));
+        () -> OptionParserFactory.unary("", Function.identity())
+                                 .parse(List.of("-d", "/usr/logs", "/var/logs"), option("d")));
     assertEquals("d", e.getOption());
   }
 
@@ -81,8 +80,8 @@ public class SingleValueOptionParserTest {
   @ValueSource(strings = {"-d -l", "-d"})
   public void should_not_accept_insufficient_argument_for_single_value_option(String arg) {
     InsufficientArgumentException e = assertThrows(InsufficientArgumentException.class,
-        () -> new SingleValueOptionParser<>("", Function.identity())
-            .parse(Arrays.stream(arg.split(" ")).toList(), option("d")));
+        () -> OptionParserFactory.unary("", Function.identity())
+                                 .parse(Arrays.stream(arg.split(" ")).toList(), option("d")));
     assertEquals("d", e.getOption());
   }
 
@@ -92,6 +91,7 @@ public class SingleValueOptionParserTest {
   public void should_set_default_value_single_value_option() {
     var defaultValue = "whatever";
     Function<String, Object> whateverParser = i -> null;
-    assertSame(defaultValue, new SingleValueOptionParser<>(defaultValue, whateverParser).parse(List.of(), option("p")));
+    assertSame(defaultValue, OptionParserFactory.unary(defaultValue, whateverParser)
+                                                .parse(List.of(), option("p")));
   }
 }
