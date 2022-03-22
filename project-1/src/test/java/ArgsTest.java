@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.wynn5a.Args;
 import io.github.wynn5a.Option;
 import io.github.wynn5a.exception.IllegalOptionException;
+import io.github.wynn5a.exception.UnsupportedTypeException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,5 +35,14 @@ public class ArgsTest {
   }
 
   public record OptionWithoutAnnotation(@Option("l") boolean logging, int port, @Option("d") String directory){}
+
+  @Test
+  public void should_throw_exception_when_type_not_present(){
+    UnsupportedTypeException e = assertThrows(UnsupportedTypeException.class,
+        () -> Args.parse(OptionWithDouble.class, "-l", "-p", "8080", "-r", "0.75"));
+    assertEquals("double", e.getType());
+  }
+
+  public record OptionWithDouble(@Option("l") boolean logging, @Option("r") double rate, @Option("d") String directory){}
 
 }

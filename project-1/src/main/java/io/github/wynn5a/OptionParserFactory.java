@@ -5,6 +5,8 @@ import io.github.wynn5a.exception.TooManyArgumentsException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -21,6 +23,12 @@ public class OptionParserFactory {
     return (args, option) -> values(args, option, 0).isPresent();
   }
 
+  public static <T> OptionParser<T[]> list(IntFunction<T[]> generator, Function<String, T> valueParser) {
+    return (args, option) -> values(args, option)
+        .map(i -> i.stream().map(value -> parseValue(valueParser, value)).toArray(generator))
+        .orElse(generator.apply(0));
+  }
+
   static Optional<List<String>> values(List<String> args, Option option, int expectedSize) {
     int index = args.indexOf("-" + option.value());
     if (index == -1) {
@@ -34,6 +42,15 @@ public class OptionParserFactory {
       throw new TooManyArgumentsException(option.value());
     }
 
+    return Optional.of(values);
+  }
+
+  static Optional<List<String>> values(List<String> args, Option option) {
+    int index = args.indexOf("-" + option.value());
+    if (index == -1) {
+      return Optional.empty();
+    }
+    List<String> values = valuesFrom(args, index);
     return Optional.of(values);
   }
 
