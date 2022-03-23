@@ -39,7 +39,10 @@ public class Args {
   private static final Map<Class<?>, OptionParser<?>> PARSERS = Map.of(
       int.class, OptionParserFactory.unary(0, Integer::parseInt),
       boolean.class, OptionParserFactory.bool(),
-      String.class, OptionParserFactory.unary("", Function.identity()));
+      String.class, OptionParserFactory.unary("", Function.identity()),
+      Integer[].class, OptionParserFactory.list(Integer[]::new, Integer::parseInt),
+      String[].class, OptionParserFactory.list(String[]::new, Function.identity())
+  );
 
   private static OptionParser<?> getOptionParser(Class<?> type) {
     if (!PARSERS.containsKey(type)) {

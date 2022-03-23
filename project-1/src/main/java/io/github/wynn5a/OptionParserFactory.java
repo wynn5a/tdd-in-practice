@@ -1,12 +1,15 @@
 package io.github.wynn5a;
 
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+
+import io.github.wynn5a.exception.IllegalValueException;
 import io.github.wynn5a.exception.InsufficientArgumentException;
 import io.github.wynn5a.exception.TooManyArgumentsException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -29,10 +32,10 @@ public class OptionParserFactory {
         .orElse(generator.apply(0));
   }
 
-  static Optional<List<String>> values(List<String> args, Option option, int expectedSize) {
+  private static Optional<List<String>> values(List<String> args, Option option, int expectedSize) {
     int index = args.indexOf("-" + option.value());
     if (index == -1) {
-      return Optional.empty();
+      return empty();
     }
     List<String> values = valuesFrom(args, index);
     if (values.size() < expectedSize) {
@@ -42,21 +45,17 @@ public class OptionParserFactory {
       throw new TooManyArgumentsException(option.value());
     }
 
-    return Optional.of(values);
+    return of(values);
   }
 
-  static Optional<List<String>> values(List<String> args, Option option) {
+  private static Optional<List<String>> values(List<String> args, Option option) {
     int index = args.indexOf("-" + option.value());
-    if (index == -1) {
-      return Optional.empty();
-    }
-    List<String> values = valuesFrom(args, index);
-    return Optional.of(values);
+    return index == -1 ? empty() : of(valuesFrom(args, index));
   }
 
-  public static List<String> valuesFrom(List<String> args, int index) {
+  private static List<String> valuesFrom(List<String> args, int index) {
     int followingFlagIndex = IntStream.range(index + 1, args.size())
-                                      .filter(i -> args.get(i).startsWith("-"))
+                                      .filter(i -> args.get(i).matches("^-[a-zA-Z]+$"))
                                       .findFirst()
                                       .orElse(args.size());
 
@@ -64,6 +63,10 @@ public class OptionParserFactory {
   }
 
   private static <T> T parseValue(Function<String, T> valueParser, String value) {
-    return valueParser.apply(value);
+    try {
+      return valueParser.apply(value);
+    } catch (Exception e) {
+      throw new IllegalValueException(value, e);
+    }
   }
 }

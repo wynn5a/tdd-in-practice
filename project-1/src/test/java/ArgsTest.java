@@ -1,3 +1,4 @@
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6,7 +7,6 @@ import io.github.wynn5a.Args;
 import io.github.wynn5a.Option;
 import io.github.wynn5a.exception.IllegalOptionException;
 import io.github.wynn5a.exception.UnsupportedTypeException;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -25,24 +25,41 @@ public class ArgsTest {
   }
 
   public record Options(@Option("l") boolean logging, @Option("p") int port, @Option("d") String directory) {
+
   }
 
   @Test
-  public void should_throw_illegal_option_exception_when_annotation_not_present(){
+  public void should_throw_illegal_option_exception_when_annotation_not_present() {
     IllegalOptionException illegalOptionException = assertThrows(IllegalOptionException.class,
         () -> Args.parse(OptionWithoutAnnotation.class, "-l", "-p", "8080", "-d", "/usr/logs"));
     assertEquals("port", illegalOptionException.getName());
   }
 
-  public record OptionWithoutAnnotation(@Option("l") boolean logging, int port, @Option("d") String directory){}
+  public record OptionWithoutAnnotation(@Option("l") boolean logging, int port, @Option("d") String directory) {
+
+  }
 
   @Test
-  public void should_throw_exception_when_type_not_present(){
+  public void should_throw_exception_when_type_not_present() {
     UnsupportedTypeException e = assertThrows(UnsupportedTypeException.class,
         () -> Args.parse(OptionWithDouble.class, "-l", "-p", "8080", "-r", "0.75"));
     assertEquals("double", e.getType());
   }
 
-  public record OptionWithDouble(@Option("l") boolean logging, @Option("r") double rate, @Option("d") String directory){}
+  public record OptionWithDouble(@Option("l") boolean logging, @Option("r") double rate,
+                                 @Option("d") String directory) {
 
+  }
+
+
+  @Test
+  public void should_parse_list_options() {
+    ListOptions options = Args.parse(ListOptions.class, "-d", "1", "2", "-3", "-g", "this", "is");
+    assertArrayEquals(new Integer[]{1, 2, -3}, options.numbers());
+    assertArrayEquals(new String[]{"this", "is"}, options.strings());
+  }
+
+  public record ListOptions(@Option("d") Integer[] numbers, @Option("g") String[] strings) {
+
+  }
 }
