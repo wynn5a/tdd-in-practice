@@ -59,7 +59,5 @@ public class ArgsTest {
     assertArrayEquals(new String[]{"this", "is"}, options.strings());
   }
 
-  public record ListOptions(@Option("d") Integer[] numbers, @Option("g") String[] strings) {
-
-  }
+  public record ListOptions(@Option("d") Integer[] numbers, @Option("g") String[] strings) { }
 }

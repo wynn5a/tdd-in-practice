@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.wynn5a.Option;
 import io.github.wynn5a.OptionParserFactory;
+import io.github.wynn5a.exception.IllegalValueException;
 import io.github.wynn5a.exception.InsufficientArgumentException;
 import io.github.wynn5a.exception.TooManyArgumentsException;
 import java.lang.annotation.Annotation;
@@ -61,6 +62,12 @@ public class SingleValueOptionParserTest {
   }
 
   //sad path
+  @Test
+  public void should_raise_exception_if_value_parser_cannot_parse_value() {
+    IllegalValueException e = assertThrows(IllegalValueException.class,
+        () -> OptionParserFactory.unary(0, Integer::parseInt).parse(List.of("-p", "s"), option("p")));
+    assertEquals("s", e.getValue());
+  }
   @Test
   public void should_not_accept_extra_argument_for_int_option() {
     TooManyArgumentsException e = assertThrows(TooManyArgumentsException.class,
