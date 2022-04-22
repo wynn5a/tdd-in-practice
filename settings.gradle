@@ -2,4 +2,5 @@ rootProject.name = 'tdd-in-practice'
 
 include "project-1"
 include 'di-function-sample'
+include 'project-2'
 
