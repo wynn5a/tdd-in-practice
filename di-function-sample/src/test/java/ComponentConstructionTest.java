@@ -2,6 +2,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import javax.inject.Inject;
+import model.Car;
+import model.Engine;
+import model.EngineV6;
+import model.EngineV8;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -11,31 +15,6 @@ import org.junit.jupiter.api.Test;
  */
 public class ComponentConstructionTest {
 
-  interface Car {
-
-    Engine engine();
-  }
-
-  interface Engine {
-
-    String name();
-  }
-
-  static class V8Engine implements Engine {
-
-    @Override
-    public String name() {
-      return "V8";
-    }
-  }
-
-  static class V6Engine implements Engine {
-
-    @Override
-    public String name() {
-      return "V6";
-    }
-  }
 
   static final class CarInjectedByConstructor implements Car {
 
@@ -46,7 +25,7 @@ public class ComponentConstructionTest {
       this.engine = engine;
     }
 
-    public Engine engine() {
+    public Engine getEngine() {
       return engine;
     }
   }
@@ -57,7 +36,7 @@ public class ComponentConstructionTest {
     private Engine engine;
 
     @Override
-    public Engine engine() {
+    public Engine getEngine() {
       return engine;
     }
   }
@@ -67,13 +46,13 @@ public class ComponentConstructionTest {
     Injector injector = Guice.createInjector(new AbstractModule() {
       @Override
       protected void configure() {
-        bind(Engine.class).to(V8Engine.class);
+        bind(Engine.class).to(EngineV8.class);
         bind(Car.class).to(CarInjectedByConstructor.class);
       }
     });
 
     Car car = injector.getInstance(Car.class);
-    Assertions.assertEquals(new V8Engine().name(), car.engine().name());
+    Assertions.assertEquals(new EngineV8().name(), car.getEngine().name());
   }
 
   @Test
@@ -81,14 +60,12 @@ public class ComponentConstructionTest {
     Injector injector = Guice.createInjector(new AbstractModule() {
       @Override
       protected void configure() {
-        bind(Engine.class).to(V6Engine.class);
+        bind(Engine.class).to(EngineV6.class);
         bind(Car.class).to(CarInjectedByField.class);
       }
     });
 
     Car car = injector.getInstance(Car.class);
-    Assertions.assertEquals(new V6Engine().name(), car.engine().name());
+    Assertions.assertEquals(new EngineV6().name(), car.getEngine().name());
   }
-
-
 }

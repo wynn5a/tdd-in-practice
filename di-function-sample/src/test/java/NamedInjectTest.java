@@ -1,11 +1,21 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Qualifier;
+import model.Car;
+import model.Engine;
+import model.EngineV6;
+import model.EngineV8;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -14,16 +24,6 @@ import org.junit.jupiter.api.Test;
  * @date 2022/4/22
  */
 public class NamedInjectTest {
-
-  interface Engine {
-
-    String name();
-  }
-
-  interface Car {
-
-    Engine getEngine();
-  }
 
   static class CarWithNamedInject implements Car {
 
@@ -42,22 +42,6 @@ public class NamedInjectTest {
     @Override
     public Class<? extends Annotation> annotationType() {
       return Named.class;
-    }
-  }
-
-  static class EngineV8 implements Engine {
-
-    @Override
-    public String name() {
-      return "V8";
-    }
-  }
-
-  static class EngineV6 implements Engine {
-
-    @Override
-    public String name() {
-      return "V6";
     }
   }
 
@@ -83,6 +67,47 @@ public class NamedInjectTest {
         bind(Car.class).to(CarWithNamedInject.class);
       }
     }));
+  }
+
+  @Qualifier
+  @Target({ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Super {
+
+  }
+
+  record SuperEngine() implements Super {
+
+    @Override
+    public Class<? extends Annotation> annotationType() {
+      return Super.class;
+    }
+  }
+
+  static class SuperEngineCar implements Car {
+
+    @Inject
+    @Super
+    Engine engine;
+
+    @Override
+    public Engine getEngine() {
+      return engine;
+    }
+  }
+
+  @Test
+  public void should_inject_by_special_annotation() {
+    Injector injector = Guice.createInjector(new AbstractModule() {
+      @Override
+      protected void configure() {
+        bind(Engine.class).annotatedWith(new SuperEngine()).to(EngineV8.class);
+        bind(Car.class).to(SuperEngineCar.class);
+      }
+    });
+
+    Car car = injector.getInstance(Car.class);
+    assertEquals(new EngineV8().name(), car.getEngine().name());
   }
 
 }
