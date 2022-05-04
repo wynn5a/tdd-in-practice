@@ -1,5 +1,6 @@
 package io.github.wynn5a.di;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,6 +58,21 @@ public class ContainerTest {
         assertNotNull(component);
         Dependency got = ((SomeComponentWithDependency) component).getDependency();
         assertSame(dependency, got);
+      }
+
+      //a->b->c
+      @Test
+      public void should_bind_type_with_transitive_dependency(){
+        container.bind(Component.class, SomeComponentWithDependency.class);
+        container.bind(Dependency.class, DependencyInstanceWithDependency.class);
+        container.bind(String.class, "Dependency");
+
+        Component component = container.get(Component.class);
+        assertNotNull(component);
+        Dependency dependency = ((SomeComponentWithDependency) component).getDependency();
+        assertNotNull(dependency);
+        String name = ((DependencyInstanceWithDependency) dependency).getName();
+        assertEquals("Dependency", name);
       }
     }
 
