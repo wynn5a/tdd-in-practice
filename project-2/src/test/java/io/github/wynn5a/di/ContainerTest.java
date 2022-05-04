@@ -44,6 +44,20 @@ public class ContainerTest {
         assertNotNull(got);
         assertTrue(got instanceof SomeComponent);
       }
+
+      //constructor dependency
+      @Test
+      public void should_bind_component_with_constructor_dependency() {
+        container.bind(Component.class, SomeComponentWithDependency.class);
+        Dependency dependency = new Dependency() {
+        };
+        container.bind(Dependency.class, dependency);
+
+        Component component = container.get(Component.class);
+        assertNotNull(component);
+        Dependency got = ((SomeComponentWithDependency) component).getDependency();
+        assertSame(dependency, got);
+      }
     }
 
   }
