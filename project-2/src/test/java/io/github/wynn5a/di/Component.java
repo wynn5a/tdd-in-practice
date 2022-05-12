@@ -23,3 +23,21 @@ class SomeComponentWithDependency implements Component{
     return dependency;
   }
 }
+
+class SomeComponentWithMultiInjected implements Component{
+  private final Dependency dependency;
+
+  @Inject
+  public SomeComponentWithMultiInjected(Dependency dependency){
+    this.dependency = dependency;
+  }
+
+  @Inject
+  public SomeComponentWithMultiInjected(Dependency dependency, String name) {
+    this.dependency = dependency;
+  }
+}
+class SomeComponentCannotDecideConstructor implements Component{
+  public SomeComponentCannotDecideConstructor(Dependency dependency){
+  }
+}
