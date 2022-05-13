@@ -22,3 +22,10 @@ class DependencyInstanceWithDependency implements Dependency{
     return name;
   }
 }
+
+class DependencyDependedOnComponent implements Dependency{
+
+  @Inject
+  public DependencyDependedOnComponent(Component component) {
+  }
+}

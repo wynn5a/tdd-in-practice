@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.IllegalDependencyException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
@@ -112,6 +113,15 @@ public class ContainerTest {
       public void should_raise_exception_when_dependency_not_found_in_container() {
         container.bind(Component.class, SomeComponentWithDependency.class);
         IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> container.get(Component.class));
+        assertEquals(Dependency.class.getName(), exception.getMessage());
+      }
+
+      // cyclic dependency a->b->a
+      @Test
+      public void should_raise_exception_when_cyclic_dependency_found(){
+        container.bind(Dependency.class, DependencyDependedOnComponent.class);
+        container.bind(Component.class, SomeComponentWithCyclicDependency.class);
+        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
         assertEquals(Dependency.class.getName(), exception.getMessage());
       }
     }

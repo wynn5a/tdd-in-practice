@@ -41,3 +41,10 @@ class SomeComponentCannotDecideConstructor implements Component{
   public SomeComponentCannotDecideConstructor(Dependency dependency){
   }
 }
+
+class SomeComponentWithCyclicDependency implements Component{
+
+  @Inject
+  public SomeComponentWithCyclicDependency(Dependency dependency){
+  }
+}
