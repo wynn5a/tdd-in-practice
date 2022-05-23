@@ -1,7 +1,6 @@
 package io.github.wynn5a.di;
 
 import io.github.wynn5a.di.exception.IllegalComponentException;
-import io.github.wynn5a.di.exception.IllegalDependencyException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
 import java.lang.reflect.Constructor;
@@ -22,19 +21,9 @@ public class Container {
 
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType) {
     Constructor<?> constructor = getInjectedConstructor(instanceType);
-    SUPPLIER_MAP.put(type, () -> {
-      try {
-        Object[] objects = Arrays.stream(constructor.getParameterTypes())
-                                 .map(p -> get(p).orElseThrow(() -> new IllegalDependencyException(p.getName())))
-                                 .toArray();
-        return constructor.newInstance(objects);
-      } catch (RuntimeException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    SUPPLIER_MAP.put(type, new InstanceSupplier<>(this, constructor));
   }
+
 
   @SuppressWarnings("unchecked")
   private <I> Constructor<I> getInjectedConstructor(Class<I> instanceType) {

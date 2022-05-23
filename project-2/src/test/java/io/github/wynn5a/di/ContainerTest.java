@@ -122,7 +122,7 @@ public class ContainerTest {
         container.bind(Dependency.class, DependencyDependedOnComponent.class);
         container.bind(Component.class, SomeComponentWithCyclicDependency.class);
         CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
-        assertEquals(Dependency.class.getName(), exception.getMessage());
+        assertEquals(SomeComponentWithCyclicDependency.class.getName(), exception.getMessage());
       }
     }
 
