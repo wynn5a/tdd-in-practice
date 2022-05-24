@@ -133,7 +133,8 @@ public class ContainerTest {
         container.bind(Dependency.class, DependencyDependedOnComponent.class);
         container.bind(Component.class, SomeComponentWithCyclicDependency.class);
         CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
-        assertEquals(Component.class, exception.getComponent());
+        assertEquals("io.github.wynn5a.di.SomeComponentWithCyclicDependency -> io.github.wynn5a.di.DependencyDependedOnComponent -> io.github.wynn5a.di.SomeComponentWithCyclicDependency",
+            exception.getDependencies());
       }
 
       @Test // a->b->c->a
@@ -142,7 +143,7 @@ public class ContainerTest {
         container.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
         container.bind(Component.class, SomeComponentWithCyclicDependency.class);
         CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
-        assertEquals(Component.class, exception.getComponent());
+        assertEquals("io.github.wynn5a.di.SomeComponentWithCyclicDependency -> io.github.wynn5a.di.DependencyDependedOnDependency -> io.github.wynn5a.di.AnotherDependencyDependedOnComponent -> io.github.wynn5a.di.SomeComponentWithCyclicDependency", exception.getDependencies());
       }
 
     }

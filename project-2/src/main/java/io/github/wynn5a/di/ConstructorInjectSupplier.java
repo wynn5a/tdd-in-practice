@@ -12,7 +12,6 @@ import java.util.function.Supplier;
  */
 public class ConstructorInjectSupplier<T> implements Supplier<T> {
 
-
   private final Container container;
   private final Class<?> componentType;
   private final Constructor<T> constructor;
@@ -28,7 +27,7 @@ public class ConstructorInjectSupplier<T> implements Supplier<T> {
   @Override
   public T get() {
     if (constructing) {
-      throw new CyclicDependencyFoundException(componentType);
+      throw new CyclicDependencyFoundException(constructor.getDeclaringClass().getName());
     }
 
     try {
@@ -38,7 +37,10 @@ public class ConstructorInjectSupplier<T> implements Supplier<T> {
                                                   .orElseThrow(() -> new IllegalDependencyException(componentType, p)))
                                .toArray();
       return constructor.newInstance(objects);
-    } catch (RuntimeException e) {
+    } catch (CyclicDependencyFoundException e) {
+      throw new CyclicDependencyFoundException(constructor.getDeclaringClass().getName(), e);
+    }
+    catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);

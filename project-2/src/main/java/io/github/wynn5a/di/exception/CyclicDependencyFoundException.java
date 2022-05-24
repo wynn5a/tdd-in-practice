@@ -5,13 +5,17 @@ package io.github.wynn5a.di.exception;
  * @date 2022/5/13
  */
 public class CyclicDependencyFoundException extends RuntimeException {
-  private final Class<?> component;
+  private final String dependencies;
 
-  public CyclicDependencyFoundException(Class<?> component) {
-    this.component = component;
+  public CyclicDependencyFoundException(String dependencies) {
+    this.dependencies = dependencies;
   }
 
-  public Class<?> getComponent() {
-    return component;
+  public CyclicDependencyFoundException(String dependencies, CyclicDependencyFoundException e) {
+    this.dependencies  = dependencies + " -> " +  e.getDependencies();
+  }
+
+  public String getDependencies() {
+    return dependencies;
   }
 }
