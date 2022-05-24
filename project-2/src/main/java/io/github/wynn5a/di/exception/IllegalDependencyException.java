@@ -6,8 +6,20 @@ package io.github.wynn5a.di.exception;
  */
 public class IllegalDependencyException extends RuntimeException {
 
-  public IllegalDependencyException(String dependencyTypeName) {
-    super(dependencyTypeName);
+  private final Class<?> dependency;
+  private final Class<?> component;
+
+
+  public IllegalDependencyException(Class<?> component, Class<?> dependency) {
+    this.dependency = dependency;
+    this.component = component;
   }
 
+  public Class<?> getDependency() {
+    return dependency;
+  }
+
+  public Class<?> getComponent() {
+    return component;
+  }
 }

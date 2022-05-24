@@ -109,23 +109,43 @@ public class ContainerTest {
       }
 
       //dependency not found
+      // a -> b(x)
       @Test
       public void should_raise_exception_when_dependency_not_found_in_container() {
         container.bind(Component.class, SomeComponentWithDependency.class);
         IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> container.get(Component.class));
-        assertEquals(Dependency.class.getName(), exception.getMessage());
+        assertEquals(Dependency.class, exception.getDependency());
+        assertEquals(Component.class, exception.getComponent());
+      }
+
+      @Test //a->b->c(x)
+      public void should_raise_exception_when_transitive_dependency_not_found_in_container() {
+        container.bind(Component.class, SomeComponentWithDependency.class);
+        container.bind(Dependency.class, DependencyDependedOnDependency.class);
+        IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> container.get(Component.class));
+        assertEquals(AnotherDependency.class, exception.getDependency());
+        assertEquals(Dependency.class, exception.getComponent());
       }
 
       // cyclic dependency a->b->a
       @Test
-      public void should_raise_exception_when_cyclic_dependency_found(){
+      public void should_raise_exception_when_cyclic_dependency_found() {
         container.bind(Dependency.class, DependencyDependedOnComponent.class);
         container.bind(Component.class, SomeComponentWithCyclicDependency.class);
         CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
-        assertEquals(SomeComponentWithCyclicDependency.class.getName(), exception.getMessage());
+        assertEquals(Component.class, exception.getComponent());
       }
-    }
 
+      @Test // a->b->c->a
+      public void should_raise_exception_when_transitive_cyclic_dependency_found() {
+        container.bind(Dependency.class, DependencyDependedOnDependency.class);
+        container.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
+        container.bind(Component.class, SomeComponentWithCyclicDependency.class);
+        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
+        assertEquals(Component.class, exception.getComponent());
+      }
+
+    }
   }
 
 

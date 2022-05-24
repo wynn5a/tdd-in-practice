@@ -21,7 +21,7 @@ public class Container {
 
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType) {
     Constructor<?> constructor = getInjectedConstructor(instanceType);
-    SUPPLIER_MAP.put(type, new InstanceSupplier<>(this, constructor));
+    SUPPLIER_MAP.put(type, new ConstructorInjectSupplier<>(this, type, constructor));
   }
 
 

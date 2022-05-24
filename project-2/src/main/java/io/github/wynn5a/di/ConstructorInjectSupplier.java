@@ -10,14 +10,17 @@ import java.util.function.Supplier;
  * @author wynn5a
  * @date 2022/5/23
  */
-public class InstanceSupplier<T> implements Supplier<T> {
+public class ConstructorInjectSupplier<T> implements Supplier<T> {
 
-  private final Constructor<T> constructor;
+
   private final Container container;
+  private final Class<?> componentType;
+  private final Constructor<T> constructor;
 
   private boolean constructing = false;
 
-  public InstanceSupplier(Container container, Constructor<T> constructor) {
+  public ConstructorInjectSupplier(Container container, Class<?> componentType, Constructor<T> constructor) {
+    this.componentType = componentType;
     this.constructor = constructor;
     this.container = container;
   }
@@ -25,14 +28,14 @@ public class InstanceSupplier<T> implements Supplier<T> {
   @Override
   public T get() {
     if (constructing) {
-      throw new CyclicDependencyFoundException(constructor.getDeclaringClass().getName());
+      throw new CyclicDependencyFoundException(componentType);
     }
 
     try {
       constructing = true;
       Object[] objects = Arrays.stream(constructor.getParameterTypes())
                                .map(p -> container.get(p)
-                                                  .orElseThrow(() -> new IllegalDependencyException(p.getName())))
+                                                  .orElseThrow(() -> new IllegalDependencyException(componentType, p)))
                                .toArray();
       return constructor.newInstance(objects);
     } catch (RuntimeException e) {

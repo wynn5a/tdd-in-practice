@@ -29,3 +29,19 @@ class DependencyDependedOnComponent implements Dependency{
   public DependencyDependedOnComponent(Component component) {
   }
 }
+
+class DependencyDependedOnDependency implements Dependency{
+  @Inject
+  public DependencyDependedOnDependency(AnotherDependency dependency) {
+  }
+}
+
+interface AnotherDependency{
+
+}
+
+class AnotherDependencyDependedOnComponent implements AnotherDependency{
+  @Inject
+  public AnotherDependencyDependedOnComponent(Component component) {
+  }
+}
