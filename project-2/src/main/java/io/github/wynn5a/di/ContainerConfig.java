@@ -9,19 +9,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
-public class Container {
+public class ContainerConfig {
 
-  private final Map<Class<?>, Supplier<?>> SUPPLIER_MAP = new ConcurrentHashMap<>();
+  private final Map<Class<?>, InstanceSupplier<?>> suppliers = new ConcurrentHashMap<>();
 
   public <T> void bind(Class<T> type, T instance) {
-    SUPPLIER_MAP.put(type, () -> instance);
+    suppliers.put(type, container -> instance);
   }
 
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType) {
-    Constructor<?> constructor = getInjectedConstructor(instanceType);
-    SUPPLIER_MAP.put(type, new ConstructorInjectSupplier<>(this, type, constructor));
+    Constructor<I> constructor = getInjectedConstructor(instanceType);
+    suppliers.put(type, new ConstructorInjectSupplier<>(type, constructor));
   }
 
 
@@ -45,7 +44,23 @@ public class Container {
   }
 
   @SuppressWarnings("unchecked")
-  public <T> Optional<T> get(Class<T> type) {
-    return Optional.ofNullable(SUPPLIER_MAP.get(type)).map(s -> (T) s.get());
+  public Container getContainer() {
+    return new Container() {
+      @Override
+      public <T> Optional<T> get(Class<T> type) {
+        return Optional.ofNullable(suppliers.get(type)).map(s -> (T) s.get(this));
+      }
+    };
   }
+}
+
+
+interface Container {
+
+  <T> Optional<T> get(Class<T> type);
+}
+
+interface InstanceSupplier<T> {
+
+  T get(Container container);
 }
