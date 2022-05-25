@@ -1,11 +1,9 @@
 package io.github.wynn5a.di;
 
-import static io.github.wynn5a.di.ConstructorInjectSupplier.getInjectedConstructor;
 import static java.util.List.of;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.IllegalDependencyException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,14 +62,3 @@ public class ContainerConfig {
 
 }
 
-interface Container {
-
-  <T> Optional<T> get(Class<T> type);
-}
-
-interface InstanceSupplier<T> {
-
-  T get(Container container);
-
-  List<Class<?>> dependencies();
-}
