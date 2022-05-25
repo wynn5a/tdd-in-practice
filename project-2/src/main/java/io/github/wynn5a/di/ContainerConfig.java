@@ -1,14 +1,11 @@
 package io.github.wynn5a.di;
 
+import static io.github.wynn5a.di.ConstructorInjectSupplier.getInjectedConstructor;
+import static java.util.List.of;
+
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
-import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.IllegalDependencyException;
-import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
-import jakarta.inject.Inject;
-import java.lang.reflect.Constructor;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,42 +16,28 @@ public class ContainerConfig {
 
   private final Map<Class<?>, InstanceSupplier<?>> suppliers = new ConcurrentHashMap<>();
 
-  private final Map<Class<?>, List<Class<?>>> dependencies = new HashMap<>();
-
   public <T> void bind(Class<T> type, T instance) {
-    suppliers.put(type, container -> instance);
-    dependencies.put(type, Collections.emptyList());
+    suppliers.put(type, new InstanceSupplier<T>() {
+      @Override
+      public T get(Container container) {
+        return instance;
+      }
+
+      @Override
+      public List<Class<?>> dependencies() {
+        return of();
+      }
+    });
   }
 
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType) {
-    Constructor<I> constructor = getInjectedConstructor(instanceType);
-    dependencies.put(type, Arrays.stream(constructor.getParameterTypes()).toList());
-    suppliers.put(type, new ConstructorInjectSupplier<>(constructor));
+    suppliers.put(type, new ConstructorInjectSupplier<>(instanceType));
   }
 
-
-  @SuppressWarnings("unchecked")
-  private <I> Constructor<I> getInjectedConstructor(Class<I> instanceType) {
-    List<Constructor<?>> allConstructors = Arrays.stream(instanceType.getDeclaredConstructors())
-                                                 .filter(c -> c.isAnnotationPresent(Inject.class)).toList();
-    if (allConstructors.size() > 1) {
-      throw new MultiInjectAnnotationFoundException();
-    }
-
-    if (allConstructors.size() == 0) {
-      try {
-        return instanceType.getConstructor();
-      } catch (NoSuchMethodException e) {
-        throw new IllegalComponentException(e);
-      }
-    }
-
-    return (Constructor<I>) allConstructors.get(0);
-  }
 
   @SuppressWarnings("unchecked")
   public Container getContainer() {
-    dependencies.keySet().forEach(c-> checkDependencies(c, new Stack<>()));
+    suppliers.keySet().forEach(c -> checkDependencies(c, new Stack<>()));
 
     return new Container() {
       @Override
@@ -66,12 +49,12 @@ public class ContainerConfig {
 
   private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
     visiting.push(component);
-    for (Class<?> dependency : dependencies.get(component)) {
-      if(!dependencies.containsKey(dependency)){
+    for (Class<?> dependency : suppliers.get(component).dependencies()) {
+      if (!suppliers.containsKey(dependency)) {
         throw new IllegalDependencyException(component, dependency);
       }
 
-      if(visiting.contains(dependency)){
+      if (visiting.contains(dependency)) {
         throw new CyclicDependencyFoundException(visiting);
       }
       checkDependencies(dependency, visiting);
@@ -89,4 +72,6 @@ interface Container {
 interface InstanceSupplier<T> {
 
   T get(Container container);
+
+  List<Class<?>> dependencies();
 }
