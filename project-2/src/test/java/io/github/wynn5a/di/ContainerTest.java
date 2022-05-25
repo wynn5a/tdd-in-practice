@@ -11,6 +11,7 @@ import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.IllegalDependencyException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -113,8 +114,7 @@ public class ContainerTest {
       @Test
       public void should_raise_exception_when_dependency_not_found_in_container() {
         containerConfig.bind(Component.class, SomeComponentWithDependency.class);
-        IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> containerConfig.getContainer()
-                                                                                                                   .get(Component.class));
+        IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> containerConfig.getContainer());
         assertEquals(Dependency.class, exception.getDependency());
         assertEquals(Component.class, exception.getComponent());
       }
@@ -123,8 +123,7 @@ public class ContainerTest {
       public void should_raise_exception_when_transitive_dependency_not_found_in_container() {
         containerConfig.bind(Component.class, SomeComponentWithDependency.class);
         containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
-        IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> containerConfig.getContainer()
-                                                                                                                   .get(Component.class));
+        IllegalDependencyException exception = assertThrows(IllegalDependencyException.class, () -> containerConfig.getContainer());
         assertEquals(AnotherDependency.class, exception.getDependency());
         assertEquals(Dependency.class, exception.getComponent());
       }
@@ -134,10 +133,11 @@ public class ContainerTest {
       public void should_raise_exception_when_cyclic_dependency_found() {
         containerConfig.bind(Dependency.class, DependencyDependedOnComponent.class);
         containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
-        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer()
-                                                                                                                           .get(Component.class));
-        assertEquals("io.github.wynn5a.di.SomeComponentWithCyclicDependency -> io.github.wynn5a.di.DependencyDependedOnComponent -> io.github.wynn5a.di.SomeComponentWithCyclicDependency",
-            exception.getDependencies());
+        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
+        Set<Class<?>> dependencies = exception.getDependencies();
+        assertEquals(2, dependencies.size());
+        assertTrue(dependencies.contains(Dependency.class));
+        assertTrue(dependencies.contains(Component.class));
       }
 
       @Test // a->b->c->a
@@ -146,9 +146,12 @@ public class ContainerTest {
         containerConfig.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
         containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
 
-        Container container = containerConfig.getContainer();
-        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> container.get(Component.class));
-        assertEquals("io.github.wynn5a.di.SomeComponentWithCyclicDependency -> io.github.wynn5a.di.DependencyDependedOnDependency -> io.github.wynn5a.di.AnotherDependencyDependedOnComponent -> io.github.wynn5a.di.SomeComponentWithCyclicDependency", exception.getDependencies());
+        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
+        Set<Class<?>> dependencies = exception.getDependencies();
+        assertEquals(3, dependencies.size());
+        assertTrue(dependencies.contains(Component.class));
+        assertTrue(dependencies.contains(Dependency.class));
+        assertTrue(dependencies.contains(AnotherDependency.class));
       }
 
     }

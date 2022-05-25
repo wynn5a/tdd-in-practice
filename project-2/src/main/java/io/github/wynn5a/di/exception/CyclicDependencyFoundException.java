@@ -1,21 +1,34 @@
 package io.github.wynn5a.di.exception;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Stack;
+
 /**
  * @author wynn5a
  * @date 2022/5/13
  */
 public class CyclicDependencyFoundException extends RuntimeException {
-  private final String dependencies;
+  private Set<Class<?>> dependencies = new HashSet<>();
 
-  public CyclicDependencyFoundException(String dependencies) {
+  public CyclicDependencyFoundException(Set<Class<?>> dependencies) {
     this.dependencies = dependencies;
   }
 
-  public CyclicDependencyFoundException(String dependencies, CyclicDependencyFoundException e) {
-    this.dependencies  = dependencies + " -> " +  e.getDependencies();
+  public CyclicDependencyFoundException(Class<?> dependency, CyclicDependencyFoundException e) {
+    this.dependencies = e.getDependencies();
+    this.dependencies.add(dependency);
   }
 
-  public String getDependencies() {
+  public CyclicDependencyFoundException(Stack<Class<?>> dependencies) {
+    this.dependencies.addAll(dependencies);
+  }
+
+  public <T> CyclicDependencyFoundException(Class<T> dependency) {
+    this.dependencies.add(dependency);
+  }
+
+  public Set<Class<?>> getDependencies() {
     return dependencies;
   }
 }
