@@ -1,15 +1,14 @@
 package io.github.wynn5a.di;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
-import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import java.util.Optional;
 import java.util.Set;
@@ -158,9 +157,10 @@ public class ContainerTest {
     }
 
     @Nested
-    public class FieldInjectTest{
+    public class FieldInjectTest {
+
       @Test
-      public void should_bind_type_using_field_inject(){
+      public void should_bind_type_using_field_inject() {
         containerConfig.bind(Component.class, ComponentWithFieldInject.class);
         DependencyInstance instance = new DependencyInstance();
         containerConfig.bind(Dependency.class, instance);
@@ -172,19 +172,19 @@ public class ContainerTest {
       }
 
       @Test
-      public void should_throw_exception_when_injected_field_is_final(){
+      public void should_throw_exception_when_injected_field_is_final() {
         IllegalComponentException e = assertThrows(IllegalComponentException.class, () -> containerConfig.bind(Component.class, ComponentWithFinalFieldInject.class));
         assertEquals("Field 'dependency' is failed to inject because it is final", e.getMessage());
       }
 
       @Test
-      public void should_throw_exception_when_injected_dependency_not_found(){
+      public void should_throw_exception_when_injected_dependency_not_found() {
         containerConfig.bind(Component.class, ComponentWithFieldInject.class);
         assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
       }
 
       @Test
-      public void should_throw_exception_when_cyclic_dependency_injected(){
+      public void should_throw_exception_when_cyclic_dependency_injected() {
         containerConfig.bind(Component.class, ComponentWithFieldInject.class);
         containerConfig.bind(Dependency.class, DependencyDependedOnComponentByField.class);
         CyclicDependencyFoundException e = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
@@ -194,7 +194,7 @@ public class ContainerTest {
       }
 
       @Test
-      public void should_throw_exception_when_transitive_cyclic_dependency_injected(){
+      public void should_throw_exception_when_transitive_cyclic_dependency_injected() {
         containerConfig.bind(Component.class, ComponentWithFieldInject.class);
         containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
         containerConfig.bind(AnotherDependency.class, DependencyDependedOnComponentByField.class);
