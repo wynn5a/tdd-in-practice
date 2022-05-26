@@ -48,3 +48,17 @@ class SomeComponentWithCyclicDependency implements Component{
   public SomeComponentWithCyclicDependency(Dependency dependency){
   }
 }
+
+class ComponentWithFieldInject implements Component{
+  @Inject
+  private Dependency dependency;
+
+  public Dependency getDependency() {
+    return dependency;
+  }
+}
+
+class ComponentWithFinalFieldInject implements Component{
+  @Inject
+  private final Dependency dependency = new DependencyInstance();
+}

@@ -45,3 +45,8 @@ class AnotherDependencyDependedOnComponent implements AnotherDependency{
   public AnotherDependencyDependedOnComponent(Component component) {
   }
 }
+
+class DependencyDependedOnComponentByField implements Dependency, AnotherDependency{
+  @Inject
+  private Component component;
+}

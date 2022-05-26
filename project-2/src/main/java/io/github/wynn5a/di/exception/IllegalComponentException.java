@@ -9,4 +9,8 @@ public class IllegalComponentException extends RuntimeException {
   public IllegalComponentException(Throwable e) {
     super(e);
   }
+
+  public IllegalComponentException(String message) {
+    super(message);
+  }
 }

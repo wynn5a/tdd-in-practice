@@ -3,16 +3,16 @@ package io.github.wynn5a.di;
 import static java.util.List.of;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
-import io.github.wynn5a.di.exception.IllegalDependencyException;
+import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ContainerConfig {
 
-  private final Map<Class<?>, InstanceSupplier<?>> suppliers = new ConcurrentHashMap<>();
+  private final Map<Class<?>, InstanceSupplier<?>> suppliers = new HashMap<>();
 
   public <T> void bind(Class<T> type, T instance) {
     suppliers.put(type, new InstanceSupplier<T>() {
@@ -29,7 +29,7 @@ public class ContainerConfig {
   }
 
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType) {
-    suppliers.put(type, new ConstructorInjectSupplier<>(instanceType));
+    suppliers.put(type, new InjectedInstanceSupplier<>(instanceType));
   }
 
 
@@ -49,7 +49,7 @@ public class ContainerConfig {
     visiting.push(component);
     for (Class<?> dependency : suppliers.get(component).dependencies()) {
       if (!suppliers.containsKey(dependency)) {
-        throw new IllegalDependencyException(component, dependency);
+        throw new DependencyNotFoundException(component, dependency);
       }
 
       if (visiting.contains(dependency)) {
