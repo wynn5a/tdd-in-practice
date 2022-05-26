@@ -170,6 +170,17 @@ public class ContainerTest {
         assertNotNull(dependency);
         assertSame(instance, dependency);
       }
+      @Test
+      public void should_bind_type_using_field_inject_in_super_class() {
+        containerConfig.bind(Component.class, SubClassOfComponentWithFieldInject.class);
+        DependencyInstance instance = new DependencyInstance();
+        containerConfig.bind(Dependency.class, instance);
+        Component component = containerConfig.getContainer().get(Component.class).orElse(null);
+        assertNotNull(component);
+        Dependency dependency = ((SubClassOfComponentWithFieldInject) component).getDependency();
+        assertNotNull(dependency);
+        assertSame(instance, dependency);
+      }
 
       @Test
       public void should_throw_exception_when_injected_field_is_final() {

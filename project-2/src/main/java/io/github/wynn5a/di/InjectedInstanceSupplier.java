@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,17 +27,23 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static <T> List<Field> getInjectedFields(Class<T> instanceType) {
-    List<Field> fields = Arrays.stream(instanceType.getDeclaredFields())
-                               .filter(f -> f.isAnnotationPresent(Inject.class))
-                               .collect(Collectors.toList());
-
-    for (Field f : fields) {
-      if (Modifier.isFinal(f.getModifiers())) {
-        throw new IllegalComponentException("Field '" + f.getName() + "' is failed to inject because it is final");
-      }
+    List<Field> result = new ArrayList<>();
+    Class<?> currentType = instanceType;
+    while (currentType != Object.class) {
+      List<Field> fields = Arrays.stream(currentType.getDeclaredFields())
+                                 .filter(f -> f.isAnnotationPresent(Inject.class)).toList();
+      checkFinalField(fields);
+      result.addAll(fields);
+      currentType = currentType.getSuperclass();
     }
 
-    return fields;
+    return result;
+  }
+
+  private static void checkFinalField(List<Field> fields) {
+    fields.stream().filter(f -> Modifier.isFinal(f.getModifiers())).findAny().ifPresent(f -> {
+      throw new IllegalComponentException("Field '" + f.getName() + "' is failed to inject because it is final");
+    });
   }
 
   @SuppressWarnings("unchecked")

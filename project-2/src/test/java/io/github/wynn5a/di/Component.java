@@ -62,3 +62,6 @@ class ComponentWithFinalFieldInject implements Component{
   @Inject
   private final Dependency dependency = new DependencyInstance();
 }
+
+class SubClassOfComponentWithFieldInject extends ComponentWithFieldInject{
+}
