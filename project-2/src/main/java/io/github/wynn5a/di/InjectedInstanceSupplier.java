@@ -5,10 +5,13 @@ import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,30 +23,45 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   private final Constructor<T> constructor;
   private final List<Field> injectedFields;
+  private final List<Method> injectedMethods;
 
   public InjectedInstanceSupplier(Class<T> instanceType) {
     this.constructor = getInjectedConstructor(instanceType);
     this.injectedFields = getInjectedFields(instanceType);
+    this.injectedMethods = getInjectedMethods(instanceType);
+  }
+
+  private static <T> List<Method> getInjectedMethods(Class<T> instanceType) {
+    var results = new ArrayList<Method>();
+    Class<?> currentType = instanceType;
+
+    while (currentType != Object.class) {
+      var methods = currentType.getDeclaredMethods();
+      for (var method : methods) {
+        if (method.isAnnotationPresent(Inject.class)) {
+          results.add(method);
+        }
+      }
+      currentType = currentType.getSuperclass();
+    }
+    return results;
   }
 
   private static <T> List<Field> getInjectedFields(Class<T> instanceType) {
     List<Field> result = new ArrayList<>();
     Class<?> currentType = instanceType;
     while (currentType != Object.class) {
-      List<Field> fields = Arrays.stream(currentType.getDeclaredFields())
-                                 .filter(f -> f.isAnnotationPresent(Inject.class)).toList();
-      checkFinalField(fields);
-      result.addAll(fields);
+      for (Field f : currentType.getDeclaredFields()) {
+        if (f.isAnnotationPresent(Inject.class)) {
+          if (Modifier.isFinal(f.getModifiers())) {
+            throw new IllegalComponentException("Field '" + f.getName() + "' is failed to inject because it is final");
+          }
+          result.add(f);
+        }
+      }
       currentType = currentType.getSuperclass();
     }
-
     return result;
-  }
-
-  private static void checkFinalField(List<Field> fields) {
-    fields.stream().filter(f -> Modifier.isFinal(f.getModifiers())).findAny().ifPresent(f -> {
-      throw new IllegalComponentException("Field '" + f.getName() + "' is failed to inject because it is final");
-    });
   }
 
   @SuppressWarnings("unchecked")
@@ -82,6 +100,18 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
         }
       });
 
+      injectedMethods.forEach(m -> {
+        try {
+          m.setAccessible(true);
+
+          Object[] parameters = Arrays.stream(m.getParameterTypes())
+                                      .map(c -> container.get(c).orElse(null))
+                                      .toArray();
+          m.invoke(t, parameters);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+          throw new IllegalComponentException(e);
+        }
+      });
       return t;
     } catch (RuntimeException e) {
       throw e;
@@ -92,7 +122,11 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   @Override
   public List<Class<?>> dependencies() {
-    return Stream.concat(injectedFields.stream().map(Field::getType), Stream.of(constructor.getParameterTypes()))
+    return Stream.of(Arrays.stream(constructor.getParameterTypes()),
+                     injectedFields.stream().map(Field::getType),
+                     injectedMethods.stream().map(Method::getParameterTypes).flatMap(Arrays::stream))
+                 .flatMap(Function.identity())
+                 .distinct()
                  .collect(Collectors.toList());
   }
 }

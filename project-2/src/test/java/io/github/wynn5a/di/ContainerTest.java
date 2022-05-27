@@ -216,6 +216,54 @@ public class ContainerTest {
         assertTrue(e.getDependencies().contains(AnotherDependency.class));
       }
     }
+
+    @Nested
+    public class MethodInjectTest{
+      @Test
+      public void should_bind_type_using_method_inject(){
+        containerConfig.bind(Component.class, ComponentWithMethodInject.class);
+        DependencyInstance instance = new DependencyInstance();
+        containerConfig.bind(Dependency.class, instance);
+        Component component = containerConfig.getContainer().get(Component.class).orElse(null);
+        assertNotNull(component);
+        Dependency dependency = ((ComponentWithMethodInject) component).getDependency();
+        assertNotNull(dependency);
+        assertSame(instance, dependency);
+      }
+
+      @Test
+      public void should_bind_type_using_method_inject_in_super_class(){
+        containerConfig.bind(Component.class, SubClassOfComponentWithMethodInject.class);
+        DependencyInstance instance = new DependencyInstance();
+        containerConfig.bind(Dependency.class, instance);
+        Component component = containerConfig.getContainer().get(Component.class).orElse(null);
+        assertNotNull(component);
+        Dependency dependency = ((SubClassOfComponentWithMethodInject) component).getDependency();
+        assertNotNull(dependency);
+        assertSame(instance, dependency);
+      }
+
+      @Test
+      public void should_bind_all_dependency_via_method_inject(){
+        containerConfig.bind(Component.class, ComponentWithMultiInjectMethod.class);
+        DependencyInstance instance = new DependencyInstance();
+        containerConfig.bind(Dependency.class, instance);
+        String any = "test";
+        containerConfig.bind(String.class, any);
+        Component component = containerConfig.getContainer().get(Component.class).orElse(null);
+        assertNotNull(component);
+        Dependency dependency = ((ComponentWithMultiInjectMethod) component).getDependency();
+        assertNotNull(dependency);
+        assertSame(instance, dependency);
+        assertEquals(any, ((ComponentWithMultiInjectMethod) component).getName());
+      }
+
+      @Test
+      public void should_raise_exception_when_dependency_not_found(){
+        containerConfig.bind(Component.class, ComponentWithMethodInject.class);
+        assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
+      }
+    }
   }
 
 
