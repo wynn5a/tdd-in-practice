@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,12 +40,34 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
       var methods = currentType.getDeclaredMethods();
       for (var method : methods) {
         if (method.isAnnotationPresent(Inject.class)) {
+          //inject will invoke only once if subclass has injected annotation
+          if(isOverriddenWithInjected(results, method)){
+            continue;
+          }
+          //inject will be disabled if subclass has not injected annotation
+          if(isOverridden(instanceType, method, currentType)){
+           continue;
+          }
           results.add(method);
         }
       }
       currentType = currentType.getSuperclass();
     }
+    Collections.reverse(results);
     return results;
+  }
+
+  private static <T> boolean isOverridden(Class<T> instanceType, Method method, Class<?> currentType) {
+    try {
+      return instanceType.getMethod(method.getName(), method.getParameterTypes()).getDeclaringClass() != currentType;
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static boolean isOverriddenWithInjected(ArrayList<Method> results, Method method) {
+    return results.stream().anyMatch(m -> m.getName().equals(method.getName())
+        && Arrays.equals(m.getParameterTypes(), method.getParameterTypes()));
   }
 
   private static <T> List<Field> getInjectedFields(Class<T> instanceType) {
@@ -103,7 +126,6 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
       injectedMethods.forEach(m -> {
         try {
           m.setAccessible(true);
-
           Object[] parameters = Arrays.stream(m.getParameterTypes())
                                       .map(c -> container.get(c).orElse(null))
                                       .toArray();
