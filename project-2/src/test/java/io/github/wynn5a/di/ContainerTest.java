@@ -297,18 +297,6 @@ public class ContainerTest {
       }
 
       @Test
-      public void should_bind_type_using_method_inject_in_super_class(){
-        containerConfig.bind(Component.class, SubClassOfComponentWithMethodInject.class);
-        DependencyInstance instance = new DependencyInstance();
-        containerConfig.bind(Dependency.class, instance);
-        Component component = containerConfig.getContainer().get(Component.class).orElse(null);
-        assertNotNull(component);
-        Dependency dependency = ((SubClassOfComponentWithMethodInject) component).getDependency();
-        assertNotNull(dependency);
-        assertSame(instance, dependency);
-      }
-
-      @Test
       public void should_bind_all_dependency_via_method_inject(){
         containerConfig.bind(Component.class, ComponentWithMultiInjectMethod.class);
         DependencyInstance instance = new DependencyInstance();
