@@ -27,6 +27,10 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   private final List<Method> injectedMethods;
 
   public InjectedInstanceSupplier(Class<T> instanceType) {
+    // instance type should not be an interface or an abstract class
+    if(Modifier.isAbstract(instanceType.getModifiers())){
+      throw new IllegalComponentException("Class '" + instanceType.getName() + "' is failed to inject because it is abstract");
+    }
     this.constructor = getInjectedConstructor(instanceType);
     this.injectedFields = getInjectedFields(instanceType);
     this.injectedMethods = getInjectedMethods(instanceType);
@@ -40,6 +44,10 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
       var methods = currentType.getDeclaredMethods();
       for (var method : methods) {
         if (method.isAnnotationPresent(Inject.class)) {
+          if(method.getTypeParameters().length != 0){
+            throw new IllegalComponentException("Method '" + method.getName() + "' is failed to inject because it has typed parameters");
+          }
+
           //inject will invoke only once if subclass has injected annotation
           if(isOverriddenWithInjected(results, method)){
             continue;

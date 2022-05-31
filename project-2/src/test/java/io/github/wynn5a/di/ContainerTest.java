@@ -18,6 +18,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 测试重构：
+ * 1. 设计决策变化的时候，需要重新设计测试用例
+ * 2. TDD 过程中的 TestCase 并不一定是良好的测试用例
+ *
+ * @author wynn5a
+ */
 public class ContainerTest {
 
   ContainerConfig containerConfig;
@@ -30,6 +37,45 @@ public class ContainerTest {
   @AfterEach
   public void teardown() {
     containerConfig = null;
+  }
+
+  @Nested
+  public class DependencyCheckTest{
+    //dependency not found
+    // a -> b(x)
+    @Test
+    public void should_raise_exception_when_dependency_not_found_in_container() {
+      containerConfig.bind(Component.class, SomeComponentWithDependency.class);
+      DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
+      assertEquals(Dependency.class, exception.getDependency());
+      assertEquals(Component.class, exception.getComponent());
+    }
+
+    // cyclic dependency a->b->a
+    @Test
+    public void should_raise_exception_when_cyclic_dependency_found() {
+      containerConfig.bind(Dependency.class, DependencyDependedOnComponent.class);
+      containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
+      CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
+      Set<Class<?>> dependencies = exception.getDependencies();
+      assertEquals(2, dependencies.size());
+      assertTrue(dependencies.contains(Dependency.class));
+      assertTrue(dependencies.contains(Component.class));
+    }
+
+    @Test // a->b->c->a
+    public void should_raise_exception_when_transitive_cyclic_dependency_found() {
+      containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
+      containerConfig.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
+      containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
+
+      CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
+      Set<Class<?>> dependencies = exception.getDependencies();
+      assertEquals(3, dependencies.size());
+      assertTrue(dependencies.contains(Component.class));
+      assertTrue(dependencies.contains(Dependency.class));
+      assertTrue(dependencies.contains(AnotherDependency.class));
+    }
   }
 
 
@@ -54,6 +100,17 @@ public class ContainerTest {
     public void should_return_null_if_component_not_bind() {
       Optional<Component> componentOp = containerConfig.getContainer().get(Component.class);
       assertTrue(componentOp.isEmpty());
+    }
+
+    abstract class AbstractComponent implements Component{
+      @Inject
+      public AbstractComponent() {
+      }
+    }
+    //abstract component
+    @Test
+    public void should_raise_exception_when_abstract_component_bind() {
+      assertThrows(IllegalComponentException.class, () -> containerConfig.bind(Component.class, AbstractComponent.class));
     }
 
     @Nested
@@ -110,50 +167,7 @@ public class ContainerTest {
         assertThrows(IllegalComponentException.class, () -> containerConfig.bind(Component.class, SomeComponentCannotDecideConstructor.class));
       }
 
-      //dependency not found
-      // a -> b(x)
-      @Test
-      public void should_raise_exception_when_dependency_not_found_in_container() {
-        containerConfig.bind(Component.class, SomeComponentWithDependency.class);
-        DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
-        assertEquals(Dependency.class, exception.getDependency());
-        assertEquals(Component.class, exception.getComponent());
-      }
 
-      @Test //a->b->c(x)
-      public void should_raise_exception_when_transitive_dependency_not_found_in_container() {
-        containerConfig.bind(Component.class, SomeComponentWithDependency.class);
-        containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
-        DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
-        assertEquals(AnotherDependency.class, exception.getDependency());
-        assertEquals(Dependency.class, exception.getComponent());
-      }
-
-      // cyclic dependency a->b->a
-      @Test
-      public void should_raise_exception_when_cyclic_dependency_found() {
-        containerConfig.bind(Dependency.class, DependencyDependedOnComponent.class);
-        containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
-        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
-        Set<Class<?>> dependencies = exception.getDependencies();
-        assertEquals(2, dependencies.size());
-        assertTrue(dependencies.contains(Dependency.class));
-        assertTrue(dependencies.contains(Component.class));
-      }
-
-      @Test // a->b->c->a
-      public void should_raise_exception_when_transitive_cyclic_dependency_found() {
-        containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
-        containerConfig.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
-        containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
-
-        CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
-        Set<Class<?>> dependencies = exception.getDependencies();
-        assertEquals(3, dependencies.size());
-        assertTrue(dependencies.contains(Component.class));
-        assertTrue(dependencies.contains(Dependency.class));
-        assertTrue(dependencies.contains(AnotherDependency.class));
-      }
 
     }
 
@@ -188,34 +202,6 @@ public class ContainerTest {
         IllegalComponentException e = assertThrows(IllegalComponentException.class, () -> containerConfig.bind(Component.class, ComponentWithFinalFieldInject.class));
         assertEquals("Field 'dependency' is failed to inject because it is final", e.getMessage());
       }
-
-      @Test
-      public void should_throw_exception_when_injected_dependency_not_found() {
-        containerConfig.bind(Component.class, ComponentWithFieldInject.class);
-        assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
-      }
-
-      @Test
-      public void should_throw_exception_when_cyclic_dependency_injected() {
-        containerConfig.bind(Component.class, ComponentWithFieldInject.class);
-        containerConfig.bind(Dependency.class, DependencyDependedOnComponentByField.class);
-        CyclicDependencyFoundException e = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
-        assertEquals(2, e.getDependencies().size());
-        assertTrue(e.getDependencies().contains(Component.class));
-        assertTrue(e.getDependencies().contains(Dependency.class));
-      }
-
-      @Test
-      public void should_throw_exception_when_transitive_cyclic_dependency_injected() {
-        containerConfig.bind(Component.class, ComponentWithFieldInject.class);
-        containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
-        containerConfig.bind(AnotherDependency.class, DependencyDependedOnComponentByField.class);
-        CyclicDependencyFoundException e = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
-        assertEquals(3, e.getDependencies().size());
-        assertTrue(e.getDependencies().contains(Component.class));
-        assertTrue(e.getDependencies().contains(Dependency.class));
-        assertTrue(e.getDependencies().contains(AnotherDependency.class));
-      }
     }
 
     @Nested
@@ -228,7 +214,7 @@ public class ContainerTest {
         }
       }
       @Test
-      public void should_call_injected_method_without_dependency(){
+      public void should_call_inject_method_even_if_no_dependency(){
         containerConfig.bind(Component.class, ComponentWithMethodInjectWithoutDependency.class);
         Component component = containerConfig.getContainer().get(Component.class).orElse(null);
         assertNotNull(component);
@@ -311,10 +297,15 @@ public class ContainerTest {
         assertEquals(any, ((ComponentWithMultiInjectMethod) component).getName());
       }
 
+      //inject method cannot declare any typed parameter
+      static class TypedParameterInjectMethod{
+        @Inject
+        public <T> void setDependency(){
+        }
+      }
       @Test
-      public void should_raise_exception_when_dependency_not_found(){
-        containerConfig.bind(Component.class, ComponentWithMethodInject.class);
-        assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
+      public void should_raise_exception_if_inject_method_has_typed_parameter(){
+        assertThrows(IllegalComponentException.class, () -> containerConfig.bind(TypedParameterInjectMethod.class, TypedParameterInjectMethod.class));
       }
     }
   }
