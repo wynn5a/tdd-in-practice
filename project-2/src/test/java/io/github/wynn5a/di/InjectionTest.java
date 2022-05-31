@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,14 +30,6 @@ public class InjectionTest {
     when(container.get(Dependency.class)).thenReturn(Optional.of(dependency));
   }
 
-  //sad path
-  //component not bind
-  @Test
-  public void should_return_null_if_component_not_bind() {
-    Optional<Component> componentOp = container.get(Component.class);
-    assertTrue(componentOp.isEmpty());
-  }
-
   @Nested
   public class ConstructorInjectTest {
 
@@ -55,7 +46,7 @@ public class InjectionTest {
       //constructor dependency
       @Test
       public void should_inject_dependency_via_inject_constructor() {
-        SomeComponentWithDependency component = new InjectedInstanceSupplier<>(SomeComponentWithDependency.class).get(container);
+        ComponentWithConstructorDependency component = new InjectedInstanceSupplier<>(ComponentWithConstructorDependency.class).get(container);
         assertNotNull(component);
         Dependency got = component.getDependency();
         assertSame(dependency, got);

@@ -10,12 +10,16 @@ class SomeComponent implements Component {
 
 }
 
-class SomeComponentWithDependency implements Component {
+interface ComponentWithDependency extends Component {
+  Dependency getDependency();
+}
+
+class ComponentWithConstructorDependency implements ComponentWithDependency {
 
   private final Dependency dependency;
 
   @Inject
-  public SomeComponentWithDependency(Dependency dependency) {
+  public ComponentWithConstructorDependency(Dependency dependency) {
     this.dependency = dependency;
   }
 
@@ -52,7 +56,7 @@ class SomeComponentWithCyclicDependency implements Component {
   }
 }
 
-class ComponentWithFieldInject implements Component {
+class ComponentWithFieldInject implements ComponentWithDependency {
 
   @Inject
   private Dependency dependency;
@@ -73,7 +77,7 @@ class SubClassOfComponentWithFieldInject extends ComponentWithFieldInject {
 }
 
 
-class ComponentWithMethodInject implements Component {
+class ComponentWithMethodInject implements ComponentWithDependency {
 
   private Dependency dependency;
 
