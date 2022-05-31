@@ -8,8 +8,6 @@ interface Component {
 
 class SomeComponent implements Component {
 
-  public SomeComponent() {
-  }
 }
 
 class SomeComponentWithDependency implements Component {
@@ -67,7 +65,7 @@ class ComponentWithFieldInject implements Component {
 class ComponentWithFinalFieldInject implements Component {
 
   @Inject
-  private final Dependency dependency = new DependencyInstance();
+  private final Dependency dependency = null;
 }
 
 class SubClassOfComponentWithFieldInject extends ComponentWithFieldInject {
@@ -80,27 +78,6 @@ class ComponentWithMethodInject implements Component {
   private Dependency dependency;
 
   @Inject
-  public void setDependency(Dependency dependency) {
-    this.dependency = dependency;
-  }
-
-  public Dependency getDependency() {
-    return dependency;
-  }
-}
-
-class SuperComponentWithMethodInject implements Component {
-
-  @Inject
-  public void setDependency(Dependency dependency) {
-  }
-}
-
-class SubClassOfComponentWithMethodInject extends SuperComponentWithMethodInject {
-
-  private Dependency dependency;
-
-  @Override
   public void setDependency(Dependency dependency) {
     this.dependency = dependency;
   }
@@ -131,5 +108,49 @@ class ComponentWithMultiInjectMethod implements Component {
 
   public String getName() {
     return name;
+  }
+}
+
+abstract class AbstractComponent implements Component {
+
+  @Inject
+  public AbstractComponent() {
+  }
+}
+
+class ComponentWithMethodInjectWithoutDependency implements Component {
+
+  int called = 0;
+
+  @Inject
+  public void setDependency() {
+    called++;
+  }
+}
+
+class SubComponentWithMethodInject extends ComponentWithMethodInjectWithoutDependency {
+
+  int subCall = 0;
+
+  @Inject
+  public void setAnotherDependency() {
+    subCall = called + 1;
+  }
+}
+
+class SubWithMethodInjectOverride extends ComponentWithMethodInjectWithoutDependency {
+
+  @Inject
+  @Override
+  public void setDependency() {
+    super.setDependency();
+  }
+}
+
+class SubWithNonInjectedOverrideMethod extends ComponentWithMethodInjectWithoutDependency {
+
+  @Override
+  public void setDependency() {
+    super.setDependency();
   }
 }
