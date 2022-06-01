@@ -32,12 +32,10 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   public InjectedInstanceSupplier(Class<T> instanceType) {
     instanceTypeShouldBeInstantiable(instanceType);
-
     this.constructor = getInjectedConstructor(instanceType);
     this.injectedFields = getInjectedFields(instanceType);
-    this.injectedMethods = getInjectedMethods(instanceType);
-
     injectedFieldShouldNotBeFinal();
+    this.injectedMethods = getInjectedMethods(instanceType);
     injectedMethodShouldNotHasTypeParameter();
   }
 
@@ -51,7 +49,7 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static List<Field> getInjectedFields(Class<?> instanceType) {
-    return traverse(instanceType, (members, current) -> injectable(current.getDeclaredFields()).toList());
+    return traverse(instanceType, (fields, current) -> injectable(current.getDeclaredFields()).toList());
   }
 
   @SuppressWarnings("unchecked")
