@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -64,10 +66,12 @@ public class ContainerTest {
     }
 
     // cyclic dependency a->b->a
-    @Test
-    public void should_raise_exception_when_cyclic_dependency_found() {
-      containerConfig.bind(Dependency.class, DependencyDependedOnComponent.class);
-      containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
+    @ParameterizedTest(name = "check cyclic dependency between injection by {0}, {1}")
+    @MethodSource("cyclicDependency")
+    public void should_raise_exception_when_cyclic_dependency_found(Class<? extends Component> component,
+                                                                    Class<? extends Dependency> dependency) {
+      containerConfig.bind(Dependency.class, dependency);
+      containerConfig.bind(Component.class, component);
       CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
       Set<Class<?>> dependencies = exception.getDependencies();
       assertEquals(2, dependencies.size());
@@ -75,11 +79,34 @@ public class ContainerTest {
       assertTrue(dependencies.contains(Component.class));
     }
 
-    @Test // a->b->c->a
-    public void should_raise_exception_when_transitive_cyclic_dependency_found() {
-      containerConfig.bind(Dependency.class, DependencyDependedOnDependency.class);
-      containerConfig.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
-      containerConfig.bind(Component.class, SomeComponentWithCyclicDependency.class);
+    static Stream<Arguments> cyclicDependency() {
+      List<Named<?>> components = List.of(Named.of("constructor", ComponentWithConstructorDependency.class),
+          Named.of("field", ComponentWithFieldInject.class),
+          Named.of("method", ComponentWithMethodInject.class)
+      );
+
+      List<Named<?>> dependencies = List.of(Named.of("constructor", DependencyDependedOnComponent.class),
+          Named.of("field", DependencyDependedOnComponentByField.class),
+          Named.of("method", DependencyDependedOnComponentByMethod.class)
+      );
+
+      List<Arguments> arguments = new ArrayList<>();
+      for (var component : components) {
+        for (var dependency : dependencies) {
+          arguments.add(Arguments.of(component, dependency));
+        }
+      }
+      return arguments.stream();
+    }
+
+    @ParameterizedTest(name = "check cyclic dependency between injection by {0}, {1}, {2}") // a->b->c->a
+    @MethodSource("transitiveCyclicDependency")
+    public void should_raise_exception_when_transitive_cyclic_dependency_found(Class<? extends Component> component,
+                                                                               Class<? extends Dependency> dependency,
+                                                                               Class<? extends AnotherDependency> anotherDependency) {
+      containerConfig.bind(Dependency.class, dependency);
+      containerConfig.bind(AnotherDependency.class, anotherDependency);
+      containerConfig.bind(Component.class, component);
 
       CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> containerConfig.getContainer());
       Set<Class<?>> dependencies = exception.getDependencies();
@@ -87,6 +114,33 @@ public class ContainerTest {
       assertTrue(dependencies.contains(Component.class));
       assertTrue(dependencies.contains(Dependency.class));
       assertTrue(dependencies.contains(AnotherDependency.class));
+    }
+
+    static Stream<Arguments> transitiveCyclicDependency() {
+      List<Named<?>> components = List.of(Named.of("constructor", ComponentWithConstructorDependency.class),
+          Named.of("field", ComponentWithFieldInject.class),
+          Named.of("method", ComponentWithMethodInject.class)
+      );
+
+      List<Named<?>> anotherDependencies = List.of(Named.of("constructor", AnotherDependencyDependedOnComponent.class),
+          Named.of("field", AnotherDependencyDependedOnComponentByField.class),
+          Named.of("method", AnotherDependencyDependedOnComponentByMethod.class)
+      );
+
+      List<Named<?>> dependencies = List.of(Named.of("constructor", DependencyDependedOnDependency.class),
+          Named.of("field", DependencyDependedOnDependencyByField.class),
+          Named.of("method", DependencyDependedOnDependencyByMethod.class)
+      );
+
+      List<Arguments> arguments = new ArrayList<>();
+      for (var component : components) {
+        for (var dependency : dependencies) {
+          for (var anotherDependency : anotherDependencies) {
+            arguments.add(Arguments.of(component, dependency, anotherDependency));
+          }
+        }
+      }
+      return arguments.stream();
     }
   }
 
