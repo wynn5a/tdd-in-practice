@@ -2,10 +2,13 @@ package io.github.wynn5a.di;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
+import java.util.function.Supplier;
 
 public class ContainerConfig {
 
@@ -28,6 +31,15 @@ public class ContainerConfig {
       @Override
       public <T> Optional<T> get(Class<T> type) {
         return Optional.ofNullable(suppliers.get(type)).map(s -> (T) s.get(this));
+      }
+
+      @Override
+      public Optional get(ParameterizedType type) {
+        if(type.getRawType() != Supplier.class) {
+          return Optional.empty();
+        }
+        Type typeArgument = type.getActualTypeArguments()[0];
+        return Optional.ofNullable(suppliers.get(typeArgument)).map(s -> (Supplier<Object>) () -> s.get(this));
       }
     };
   }

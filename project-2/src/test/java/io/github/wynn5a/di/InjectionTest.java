@@ -4,13 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
+import java.lang.reflect.ParameterizedType;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,12 +26,18 @@ public class InjectionTest {
 
   private final Dependency dependency = mock(Dependency.class);
 
-  private final Container container = mock(Container.class);
+  private final Supplier<Dependency> dependencySupplier = mock(Supplier.class);
 
   @BeforeEach
-  public void setup() {
+  public void setup() throws NoSuchFieldException {
+    ParameterizedType supplierType = (ParameterizedType) InjectionTest.this.getClass()
+                                                                           .getDeclaredField("dependencySupplier")
+                                                                           .getGenericType();
+    when(container.get(eq(supplierType))).thenReturn(Optional.of(dependencySupplier));
     when(container.get(Dependency.class)).thenReturn(Optional.of(dependency));
   }
+
+  private final Container container = mock(Container.class);
 
   @Nested
   public class ConstructorInjectTest {
@@ -50,6 +59,14 @@ public class InjectionTest {
         assertNotNull(component);
         Dependency got = component.getDependency();
         assertSame(dependency, got);
+      }
+
+      @Test
+      public void should_inject_by_constructor_supplier() {
+        ComponentWithProviderConstructorDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderConstructorDependency.class).get(container);
+        assertNotNull(component);
+        Supplier<Dependency> got = component.getDependency();
+        assertSame(dependencySupplier, got);
       }
     }
 
@@ -81,7 +98,6 @@ public class InjectionTest {
       }
     }
 
-
   }
 
   @Nested
@@ -104,6 +120,14 @@ public class InjectionTest {
         assertNotNull(component);
         Dependency dependencyGot = component.getDependency();
         assertSame(dependency, dependencyGot);
+      }
+
+      @Test
+      public void should_inject_dependency_via_provider_field() {
+        ComponentWithProviderFieldDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderFieldDependency.class).get(container);
+        assertNotNull(component);
+        Supplier<Dependency> dependencyGot = component.getDependency();
+        assertSame(dependencySupplier, dependencyGot);
       }
     }
 
@@ -172,6 +196,14 @@ public class InjectionTest {
         Dependency dependencyGot = component.getDependency();
         assertSame(dependency, dependencyGot);
         assertEquals(anyString, component.getName());
+      }
+
+      @Test
+      public void should_inject_by_provider_method() {
+        ComponentWithProviderMethodDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderMethodDependency.class).get(container);
+        assertNotNull(component);
+        Supplier<Dependency> got = component.getDependency();
+        assertSame(dependencySupplier, got);
       }
 
     }

@@ -1,6 +1,7 @@
 package io.github.wynn5a.di;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,10 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -171,6 +174,47 @@ public class ContainerTest {
       Optional<ComponentWithDependency> got = containerConfig.getContainer().get(ComponentWithDependency.class);
       assertTrue(got.isPresent());
       assertNotNull(got.get().getDependency());
+    }
+
+    @Test
+    public void should_retrieve_bind_type_as_provider() {
+      Component instance = new Component() {
+      };
+      containerConfig.bind(Component.class, instance);
+      TypeLiteral<Supplier<Component>> literal = new TypeLiteral<>() {
+      };
+      ParameterizedType type = literal.getType();
+      Container container = containerConfig.getContainer();
+      Supplier<Component> supplier = (Supplier<Component>) container.get(type).get();
+      assertSame(instance, supplier.get());
+    }
+
+    @Test
+    public void should_not_retrieve_bind_type_as_provider_if_container_type_is_unsupported() {
+      Component instance = new Component() {
+      };
+      containerConfig.bind(Component.class, instance);
+      TypeLiteral<List<Component>> literal = new TypeLiteral<>() {
+      };
+      ParameterizedType type = literal.getType();
+      Container container = containerConfig.getContainer();
+      assertFalse(container.get(type).isPresent());
+    }
+
+    @Test
+    public void should_get_actual_generic_type_from_type_literal() {
+      TypeLiteral<Supplier<Component>> literal = new TypeLiteral<>() {
+      };
+      ParameterizedType type = literal.getType();
+      assertEquals(Supplier.class, type.getRawType());
+      assertEquals(Component.class, type.getActualTypeArguments()[0]);
+    }
+
+    public static abstract class TypeLiteral<T> {
+
+      ParameterizedType getType() {
+        return (ParameterizedType) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+      }
     }
 
   }

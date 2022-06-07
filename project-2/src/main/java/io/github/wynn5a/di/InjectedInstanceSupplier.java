@@ -9,6 +9,8 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -139,13 +141,21 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static Object getParameter(Container container, Field f) {
-    return container.get(f.getType()).orElse(null);
+    Type type = f.getGenericType();
+    if (type instanceof ParameterizedType pt) {
+      return container.get(pt).orElse(null);
+    }
+    return container.get((Class<?>)type).orElse(null);
   }
 
   private static Object[] getParameters(Container container, Executable m) {
-    return Arrays.stream(m.getParameterTypes())
-                 .map(c -> container.get(c).orElse(null))
-                 .toArray();
+    return Arrays.stream(m.getParameters()).map(p ->{
+      Type type = p.getParameterizedType();
+      if(type instanceof ParameterizedType pt){
+        return container.get(pt).orElse(null);
+      }
+      return container.get((Class<?>)type).orElse(null);
+    }).toArray();
   }
 
   private static <T> void instanceTypeShouldBeInstantiable(Class<T> instanceType) {

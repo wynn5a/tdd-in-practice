@@ -1,6 +1,7 @@
 package io.github.wynn5a.di;
 
 import jakarta.inject.Inject;
+import java.util.function.Supplier;
 
 interface Component {
 
@@ -156,5 +157,38 @@ class SubWithNonInjectedOverrideMethod extends ComponentWithMethodInjectWithoutD
   @Override
   public void setDependency() {
     super.setDependency();
+  }
+}
+
+class ComponentWithProviderConstructorDependency implements Component{
+  private final Supplier<Dependency> dependency;
+
+  @Inject
+  ComponentWithProviderConstructorDependency(Supplier<Dependency> dependency) {
+    this.dependency = dependency;
+  }
+
+  public Supplier<Dependency> getDependency() {
+    return dependency;
+  }
+}
+
+class ComponentWithProviderMethodDependency implements Component{
+  private Supplier<Dependency> dependency;
+
+  @Inject
+  public void install(Supplier<Dependency> dependency) {
+    this.dependency = dependency;
+  }
+
+  public Supplier<Dependency> getDependency() {
+    return dependency;
+  }
+}
+
+class ComponentWithProviderFieldDependency implements Component{
+  @Inject private Supplier<Dependency> dependency;
+  public Supplier<Dependency> getDependency() {
+    return dependency;
   }
 }
