@@ -1,6 +1,6 @@
 package io.github.wynn5a.di;
 
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Optional;
 
 /**
@@ -9,7 +9,5 @@ import java.util.Optional;
  */
 public interface Container {
 
-  <T> Optional<T> get(Class<T> type);
-
-  Optional get(ParameterizedType type);
+  Optional get(Type type);
 }

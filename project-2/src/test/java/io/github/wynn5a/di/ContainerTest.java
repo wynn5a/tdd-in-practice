@@ -198,7 +198,7 @@ public class ContainerTest {
       Component component = new Component() {
       };
       containerConfig.bind(Component.class, component);
-      Component got = containerConfig.getContainer().get(Component.class).orElse(null);
+      Component got = (Component) containerConfig.getContainer().get(Component.class).orElse(null);
       assertSame(component, got);
     }
 
