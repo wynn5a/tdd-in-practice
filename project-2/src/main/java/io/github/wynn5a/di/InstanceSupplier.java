@@ -2,6 +2,7 @@ package io.github.wynn5a.di;
 
 import static java.util.List.of;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -14,6 +15,10 @@ public interface InstanceSupplier<T> {
   T get(Container container);
 
   default List<Class<?>> dependencies(){
+    return of();
+  }
+
+  default List<Type> dependencyTypes(){
     return of();
   }
 }

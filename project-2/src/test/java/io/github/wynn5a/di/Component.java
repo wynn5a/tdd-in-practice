@@ -160,11 +160,11 @@ class SubWithNonInjectedOverrideMethod extends ComponentWithMethodInjectWithoutD
   }
 }
 
-class ComponentWithProviderConstructorDependency implements Component{
+class ComponentWithSupplierConstructorDependency implements Component{
   private final Supplier<Dependency> dependency;
 
   @Inject
-  ComponentWithProviderConstructorDependency(Supplier<Dependency> dependency) {
+  ComponentWithSupplierConstructorDependency(Supplier<Dependency> dependency) {
     this.dependency = dependency;
   }
 
@@ -173,7 +173,7 @@ class ComponentWithProviderConstructorDependency implements Component{
   }
 }
 
-class ComponentWithProviderMethodDependency implements Component{
+class ComponentWithSupplierMethodDependency implements Component{
   private Supplier<Dependency> dependency;
 
   @Inject
@@ -186,7 +186,7 @@ class ComponentWithProviderMethodDependency implements Component{
   }
 }
 
-class ComponentWithProviderFieldDependency implements Component{
+class ComponentWithSupplierFieldDependency implements Component{
   @Inject private Supplier<Dependency> dependency;
   public Supplier<Dependency> getDependency() {
     return dependency;

@@ -45,6 +45,17 @@ public class ContainerTest {
     containerConfig = null;
   }
 
+  public static Stream<Arguments> allKindComponent() {
+    return Stream.of(
+        Arguments.of(Named.of("Constructor", ComponentWithConstructorDependency.class)),
+        Arguments.of(Named.of("Field", ComponentWithFieldInject.class)),
+        Arguments.of(Named.of("Method", ComponentWithMethodInject.class)),
+        Arguments.of(Named.of("MethodSupplier", ComponentWithSupplierMethodDependency.class)),
+        Arguments.of(Named.of("FieldSupplier", ComponentWithSupplierFieldDependency.class)),
+        Arguments.of(Named.of("ConstructorSupplier", ComponentWithSupplierConstructorDependency.class))
+    );
+  }
+
   public static Stream<Arguments> componentWithDependency() {
     return Stream.of(
         Arguments.of(Named.of("Constructor", ComponentWithConstructorDependency.class)),
@@ -59,7 +70,7 @@ public class ContainerTest {
     //dependency not found
     // a -> b(x)
     @ParameterizedTest(name = "injected_by_{0}")
-    @MethodSource("io.github.wynn5a.di.ContainerTest#componentWithDependency")
+    @MethodSource("io.github.wynn5a.di.ContainerTest#allKindComponent")
     public void should_raise_exception_when_dependency_not_found_in_container(
         Class<? extends ComponentWithDependency> type) {
       containerConfig.bind(ComponentWithDependency.class, type);
@@ -141,6 +152,37 @@ public class ContainerTest {
           for (var anotherDependency : anotherDependencies) {
             arguments.add(Arguments.of(component, dependency, anotherDependency));
           }
+        }
+      }
+      return arguments.stream();
+    }
+
+    @ParameterizedTest(name = "supplier cyclic dependency between injection by {0}, {1}")
+    @MethodSource("cyclicDependencyWithSupplier")
+    public void should_not_throw_exception_when_cyclic_dependency_with_supplier(Class<? extends Component> component,
+                                                                                Class<? extends Dependency> dependency) {
+      containerConfig.bind(Dependency.class, dependency);
+      containerConfig.bind(Component.class, component);
+      Container container = containerConfig.getContainer();
+      Optional<Component> optionalComponent = container.get(Component.class);
+      assertTrue(optionalComponent.isPresent());
+    }
+
+    static Stream<Arguments> cyclicDependencyWithSupplier() {
+      List<Named<?>> components = List.of(Named.of("constructor", ComponentWithSupplierConstructorDependency.class),
+          Named.of("field", ComponentWithSupplierFieldDependency.class),
+          Named.of("method", ComponentWithSupplierMethodDependency.class)
+      );
+
+      List<Named<?>> dependencies = List.of(Named.of("constructor", DependencyDependedOnComponentByConstructorSupplier.class),
+          Named.of("field", DependencyDependedOnComponentByFieldSupplier.class),
+          Named.of("method", DependencyDependedOnComponentByMethodSupplier.class)
+      );
+
+      List<Arguments> arguments = new ArrayList<>();
+      for (var component : components) {
+        for (var dependency : dependencies) {
+          arguments.add(Arguments.of(component, dependency));
         }
       }
       return arguments.stream();

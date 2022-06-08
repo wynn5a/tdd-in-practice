@@ -92,6 +92,16 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
                  .collect(Collectors.toList());
   }
 
+  @Override
+  public List<Type> dependencyTypes() {
+    return Stream.of(Arrays.stream(constructor.getGenericParameterTypes()),
+                     injectedFields.stream().map(Field::getGenericType),
+                     injectedMethods.stream().map(Method::getGenericParameterTypes).flatMap(Arrays::stream))
+                 .flatMap(Function.identity())
+                 .distinct()
+                 .collect(Collectors.toList());
+  }
+
   private void injectedFieldShouldNotBeFinal() {
     injectedFields.stream().filter(f -> Modifier.isFinal(f.getModifiers())).findAny().ifPresent(f -> {
       throw new IllegalComponentException("Field '" + f.getName() + "' is failed to inject because it is final");
@@ -145,16 +155,16 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
     if (type instanceof ParameterizedType pt) {
       return container.get(pt).orElse(null);
     }
-    return container.get((Class<?>)type).orElse(null);
+    return container.get((Class<?>) type).orElse(null);
   }
 
   private static Object[] getParameters(Container container, Executable m) {
-    return Arrays.stream(m.getParameters()).map(p ->{
+    return Arrays.stream(m.getParameters()).map(p -> {
       Type type = p.getParameterizedType();
-      if(type instanceof ParameterizedType pt){
+      if (type instanceof ParameterizedType pt) {
         return container.get(pt).orElse(null);
       }
-      return container.get((Class<?>)type).orElse(null);
+      return container.get((Class<?>) type).orElse(null);
     }).toArray();
   }
 

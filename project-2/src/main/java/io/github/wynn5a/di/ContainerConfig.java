@@ -45,17 +45,29 @@ public class ContainerConfig {
   }
 
   private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
-    visiting.push(component);
-    for (Class<?> dependency : suppliers.get(component).dependencies()) {
-      if (!suppliers.containsKey(dependency)) {
-        throw new DependencyNotFoundException(component, dependency);
+    for (Type dependency : suppliers.get(component).dependencyTypes()) {
+      if(dependency instanceof ParameterizedType pd){
+        Class<?> actualTypeArgument = (Class<?>) pd.getActualTypeArguments()[0];
+        if (!suppliers.containsKey(actualTypeArgument)) {
+          throw new DependencyNotFoundException(component, actualTypeArgument);
+        }
       }
-
-      if (visiting.contains(dependency)) {
-        throw new CyclicDependencyFoundException(visiting);
+      if(dependency instanceof Class<?> c){
+        checkDependency(component, visiting, c);
       }
-      checkDependencies(dependency, visiting);
     }
+  }
+
+  private void checkDependency(Class<?> component, Stack<Class<?>> visiting, Class<?> dependency) {
+    if (!suppliers.containsKey(dependency)) {
+      throw new DependencyNotFoundException(component, dependency);
+    }
+
+    visiting.push(component);
+    if (visiting.contains(dependency)) {
+      throw new CyclicDependencyFoundException(visiting);
+    }
+    checkDependencies(dependency, visiting);
     visiting.pop();
   }
 

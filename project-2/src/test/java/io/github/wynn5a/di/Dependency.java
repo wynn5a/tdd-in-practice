@@ -1,6 +1,7 @@
 package io.github.wynn5a.di;
 
 import jakarta.inject.Inject;
+import java.util.function.Supplier;
 
 public interface Dependency {
 
@@ -26,7 +27,8 @@ class DependencyDependedOnComponentByField implements Dependency {
 class DependencyDependedOnComponentByMethod implements Dependency {
 
   @Inject
-  public void setComponent(Component component){}
+  public void setComponent(Component component) {
+  }
 }
 
 class DependencyDependedOnDependency implements Dependency {
@@ -41,10 +43,12 @@ class DependencyDependedOnDependencyByField implements Dependency {
   @Inject
   private AnotherDependency dependency;
 }
+
 class DependencyDependedOnDependencyByMethod implements Dependency {
 
   @Inject
-  public void setAnotherDependency(AnotherDependency dependency){}
+  public void setAnotherDependency(AnotherDependency dependency) {
+  }
 }
 
 interface AnotherDependency {
@@ -67,7 +71,29 @@ class AnotherDependencyDependedOnComponentByField implements AnotherDependency {
 class AnotherDependencyDependedOnComponentByMethod implements AnotherDependency {
 
   @Inject
-  public void setComponent(Component component){}
+  public void setComponent(Component component) {
+  }
 }
 
+class DependencyDependedOnComponentByConstructorSupplier implements Dependency {
 
+  private final Supplier<Component> component;
+
+  @Inject
+  DependencyDependedOnComponentByConstructorSupplier(Supplier<Component> component) {
+    this.component = component;
+  }
+}
+
+class DependencyDependedOnComponentByFieldSupplier implements Dependency {
+
+  @Inject
+  private Supplier<Component> component;
+}
+
+class DependencyDependedOnComponentByMethodSupplier implements Dependency {
+
+  @Inject
+  public void install(Supplier<Component> component) {
+  }
+}

@@ -1,5 +1,6 @@
 package io.github.wynn5a.di;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -12,6 +13,8 @@ import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +30,10 @@ public class InjectionTest {
   private final Dependency dependency = mock(Dependency.class);
 
   private final Supplier<Dependency> dependencySupplier = mock(Supplier.class);
-
+  private ParameterizedType supplierType;
   @BeforeEach
   public void setup() throws NoSuchFieldException {
-    ParameterizedType supplierType = (ParameterizedType) InjectionTest.this.getClass()
+    supplierType = (ParameterizedType) InjectionTest.this.getClass()
                                                                            .getDeclaredField("dependencySupplier")
                                                                            .getGenericType();
     when(container.get(eq(supplierType))).thenReturn(Optional.of(dependencySupplier));
@@ -63,10 +66,24 @@ public class InjectionTest {
 
       @Test
       public void should_inject_by_constructor_supplier() {
-        ComponentWithProviderConstructorDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderConstructorDependency.class).get(container);
+        ComponentWithSupplierConstructorDependency component = new InjectedInstanceSupplier<>(ComponentWithSupplierConstructorDependency.class).get(container);
         assertNotNull(component);
         Supplier<Dependency> got = component.getDependency();
         assertSame(dependencySupplier, got);
+      }
+
+      @Test
+      public void should_include_dependency_in_injected_constructor(){
+        InjectedInstanceSupplier<ComponentWithConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithConstructorDependency.class);
+        List<Class<?>> dependencies = supplier.dependencies();
+        assertArrayEquals(new Class[]{Dependency.class}, dependencies.toArray());
+      }
+
+      @Test
+      public void should_include_supplier_dependency_in_injected_constructor(){
+        InjectedInstanceSupplier<ComponentWithSupplierConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierConstructorDependency.class);
+        List<Type> dependencies = supplier.dependencyTypes();
+        assertArrayEquals(new Type[]{supplierType}, dependencies.toArray());
       }
     }
 
@@ -124,10 +141,24 @@ public class InjectionTest {
 
       @Test
       public void should_inject_dependency_via_provider_field() {
-        ComponentWithProviderFieldDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderFieldDependency.class).get(container);
+        ComponentWithSupplierFieldDependency component = new InjectedInstanceSupplier<>(ComponentWithSupplierFieldDependency.class).get(container);
         assertNotNull(component);
         Supplier<Dependency> dependencyGot = component.getDependency();
         assertSame(dependencySupplier, dependencyGot);
+      }
+
+      @Test
+      public void should_include_dependency_in_injected_Field(){
+        InjectedInstanceSupplier<ComponentWithFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithFieldInject.class);
+        List<Class<?>> dependencies = supplier.dependencies();
+        assertArrayEquals(new Class[]{Dependency.class}, dependencies.toArray());
+      }
+
+      @Test
+      public void should_include_supplier_dependency_in_injected_field(){
+        InjectedInstanceSupplier<ComponentWithSupplierFieldDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierFieldDependency.class);
+        List<Type> dependencies = supplier.dependencyTypes();
+        assertArrayEquals(new Type[]{supplierType}, dependencies.toArray());
       }
     }
 
@@ -200,12 +231,25 @@ public class InjectionTest {
 
       @Test
       public void should_inject_by_provider_method() {
-        ComponentWithProviderMethodDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderMethodDependency.class).get(container);
+        ComponentWithSupplierMethodDependency component = new InjectedInstanceSupplier<>(ComponentWithSupplierMethodDependency.class).get(container);
         assertNotNull(component);
         Supplier<Dependency> got = component.getDependency();
         assertSame(dependencySupplier, got);
       }
 
+      @Test
+      public void should_include_dependency_in_injected_method(){
+        InjectedInstanceSupplier<ComponentWithMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithMethodInject.class);
+        List<Class<?>> dependencies = supplier.dependencies();
+        assertArrayEquals(new Class[]{Dependency.class}, dependencies.toArray());
+      }
+
+      @Test
+      public void should_include_supplier_dependency_in_injected_method(){
+        InjectedInstanceSupplier<ComponentWithSupplierMethodDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierMethodDependency.class);
+        List<Type> dependencies = supplier.dependencyTypes();
+        assertArrayEquals(new Type[]{supplierType}, dependencies.toArray());
+      }
     }
 
     @Nested
