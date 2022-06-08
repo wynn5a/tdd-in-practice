@@ -14,10 +14,6 @@ public interface InstanceSupplier<T> {
 
   T get(Container container);
 
-  default List<Class<?>> dependencies(){
-    return of();
-  }
-
   default List<Type> dependencyTypes(){
     return of();
   }

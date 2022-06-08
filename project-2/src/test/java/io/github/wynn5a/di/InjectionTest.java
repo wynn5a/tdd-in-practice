@@ -75,8 +75,8 @@ public class InjectionTest {
       @Test
       public void should_include_dependency_in_injected_constructor(){
         InjectedInstanceSupplier<ComponentWithConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithConstructorDependency.class);
-        List<Class<?>> dependencies = supplier.dependencies();
-        assertArrayEquals(new Class[]{Dependency.class}, dependencies.toArray());
+        List<Type> dependencies = supplier.dependencyTypes();
+        assertArrayEquals(new Type[]{Dependency.class}, dependencies.toArray());
       }
 
       @Test
@@ -150,8 +150,8 @@ public class InjectionTest {
       @Test
       public void should_include_dependency_in_injected_Field(){
         InjectedInstanceSupplier<ComponentWithFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithFieldInject.class);
-        List<Class<?>> dependencies = supplier.dependencies();
-        assertArrayEquals(new Class[]{Dependency.class}, dependencies.toArray());
+        List<Type> dependencies = supplier.dependencyTypes();
+        assertArrayEquals(new Type[]{Dependency.class}, dependencies.toArray());
       }
 
       @Test
@@ -240,8 +240,8 @@ public class InjectionTest {
       @Test
       public void should_include_dependency_in_injected_method(){
         InjectedInstanceSupplier<ComponentWithMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithMethodInject.class);
-        List<Class<?>> dependencies = supplier.dependencies();
-        assertArrayEquals(new Class[]{Dependency.class}, dependencies.toArray());
+        List<Type> dependencies = supplier.dependencyTypes();
+        assertArrayEquals(new Type[]{Dependency.class}, dependencies.toArray());
       }
 
       @Test

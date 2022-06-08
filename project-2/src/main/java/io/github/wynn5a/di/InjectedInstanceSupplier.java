@@ -83,16 +83,6 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   @Override
-  public List<Class<?>> dependencies() {
-    return Stream.of(Arrays.stream(constructor.getParameterTypes()),
-                     injectedFields.stream().map(Field::getType),
-                     injectedMethods.stream().map(Method::getParameterTypes).flatMap(Arrays::stream))
-                 .flatMap(Function.identity())
-                 .distinct()
-                 .collect(Collectors.toList());
-  }
-
-  @Override
   public List<Type> dependencyTypes() {
     return Stream.of(Arrays.stream(constructor.getGenericParameterTypes()),
                      injectedFields.stream().map(Field::getGenericType),
@@ -152,20 +142,21 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   private static Object getParameter(Container container, Field f) {
     Type type = f.getGenericType();
-    if (type instanceof ParameterizedType pt) {
-      return container.get(pt).orElse(null);
-    }
-    return container.get((Class<?>) type).orElse(null);
+    return getParameterByType(container, type);
   }
 
   private static Object[] getParameters(Container container, Executable m) {
     return Arrays.stream(m.getParameters()).map(p -> {
       Type type = p.getParameterizedType();
-      if (type instanceof ParameterizedType pt) {
-        return container.get(pt).orElse(null);
-      }
-      return container.get((Class<?>) type).orElse(null);
+      return getParameterByType(container, type);
     }).toArray();
+  }
+
+  private static Object getParameterByType(Container container, Type type) {
+    if (type instanceof ParameterizedType pt) {
+      return container.get(pt).orElse(null);
+    }
+    return container.get((Class<?>) type).orElse(null);
   }
 
   private static <T> void instanceTypeShouldBeInstantiable(Class<T> instanceType) {
