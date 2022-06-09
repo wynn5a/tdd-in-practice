@@ -2,7 +2,6 @@ package io.github.wynn5a.di;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -26,10 +25,8 @@ public class ContainerConfig {
     suppliers.keySet().forEach(c -> checkDependencies(c, new Stack<>()));
 
     return new Container() {
-
       @Override
-      public Optional get(Type type) {
-        Ref ref = Ref.of(type);
+      public Optional get(Ref ref) {
         InstanceSupplier<?> instanceSupplier = suppliers.get(ref.getComponentType());
         if (ref.isContainerType()) {
           if (ref.getContainerType() != Supplier.class) {
@@ -43,13 +40,12 @@ public class ContainerConfig {
   }
 
   private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
-    for (Type dependency : suppliers.get(component).dependencyTypes()) {
-      Ref ref = Ref.of(dependency);
-      Class<?> componentType = ref.getComponentType();
+    for (Ref dependency : suppliers.get(component).dependencies()) {
+      Class<?> componentType = dependency.getComponentType();
       if (!suppliers.containsKey(componentType)) {
         throw new DependencyNotFoundException(component, componentType);
       }
-      if (!ref.isContainerType()) {
+      if (!dependency.isContainerType()) {
         visiting.push(component);
         if (visiting.contains(componentType)) {
           throw new CyclicDependencyFoundException(visiting);

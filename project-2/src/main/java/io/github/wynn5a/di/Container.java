@@ -1,6 +1,5 @@
 package io.github.wynn5a.di;
 
-import java.lang.reflect.Type;
 import java.util.Optional;
 
 /**
@@ -9,5 +8,5 @@ import java.util.Optional;
  */
 public interface Container {
 
-  Optional get(Type type);
+  <T> Optional<T> get(Ref<T> ref);
 }

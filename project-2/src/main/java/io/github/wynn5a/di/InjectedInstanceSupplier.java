@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -82,13 +81,14 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   @Override
-  public List<Type> dependencyTypes() {
+  public List<Ref> dependencies() {
     return Stream.of(Arrays.stream(constructor.getGenericParameterTypes()),
                      injectedFields.stream().map(Field::getGenericType),
                      injectedMethods.stream().map(Method::getGenericParameterTypes).flatMap(Arrays::stream))
                  .flatMap(Function.identity())
                  .distinct()
-                 .collect(Collectors.toList());
+                 .map(Ref::of)
+                 .toList();
   }
 
   private void injectedFieldShouldNotBeFinal() {
@@ -152,7 +152,7 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static Object getParameterByType(Container container, Type type) {
-    return container.get(type).orElse(null);
+    return container.get(Ref.of(type)).orElse(null);
   }
 
   private static <T> void instanceTypeShouldBeInstantiable(Class<T> instanceType) {

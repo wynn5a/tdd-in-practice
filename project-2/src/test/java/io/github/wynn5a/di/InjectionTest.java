@@ -13,7 +13,6 @@ import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -36,8 +35,8 @@ public class InjectionTest {
     supplierType = (ParameterizedType) InjectionTest.this.getClass()
                                                                            .getDeclaredField("dependencySupplier")
                                                                            .getGenericType();
-    when(container.get(eq(supplierType))).thenReturn(Optional.of(dependencySupplier));
-    when(container.get(Dependency.class)).thenReturn(Optional.of(dependency));
+    when(container.get(eq(Ref.of(supplierType)))).thenReturn(Optional.of(dependencySupplier));
+    when(container.get(Ref.of(Dependency.class))).thenReturn(Optional.of(dependency));
   }
 
   private final Container container = mock(Container.class);
@@ -75,15 +74,15 @@ public class InjectionTest {
       @Test
       public void should_include_dependency_in_injected_constructor(){
         InjectedInstanceSupplier<ComponentWithConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithConstructorDependency.class);
-        List<Type> dependencies = supplier.dependencyTypes();
-        assertArrayEquals(new Type[]{Dependency.class}, dependencies.toArray());
+        List<Ref> dependencies = supplier.dependencies();
+        assertArrayEquals(new Ref[]{Ref.of(Dependency.class)}, dependencies.toArray());
       }
 
       @Test
       public void should_include_supplier_dependency_in_injected_constructor(){
         InjectedInstanceSupplier<ComponentWithSupplierConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierConstructorDependency.class);
-        List<Type> dependencies = supplier.dependencyTypes();
-        assertArrayEquals(new Type[]{supplierType}, dependencies.toArray());
+        List<Ref> dependencies = supplier.dependencies();
+        assertArrayEquals(new Ref[]{Ref.of(supplierType)}, dependencies.toArray());
       }
     }
 
@@ -150,15 +149,15 @@ public class InjectionTest {
       @Test
       public void should_include_dependency_in_injected_Field(){
         InjectedInstanceSupplier<ComponentWithFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithFieldInject.class);
-        List<Type> dependencies = supplier.dependencyTypes();
-        assertArrayEquals(new Type[]{Dependency.class}, dependencies.toArray());
+        List<Ref> dependencies = supplier.dependencies();
+        assertArrayEquals(new Ref[]{Ref.of(Dependency.class)}, dependencies.toArray());
       }
 
       @Test
       public void should_include_supplier_dependency_in_injected_field(){
         InjectedInstanceSupplier<ComponentWithSupplierFieldDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierFieldDependency.class);
-        List<Type> dependencies = supplier.dependencyTypes();
-        assertArrayEquals(new Type[]{supplierType}, dependencies.toArray());
+        List<Ref> dependencies = supplier.dependencies();
+        assertArrayEquals(new Ref[]{Ref.of(supplierType)}, dependencies.toArray());
       }
     }
 
@@ -220,7 +219,7 @@ public class InjectionTest {
       @Test
       public void should_inject_all_dependency_via_method_inject() {
         String anyString = "any";
-        when(container.get(String.class)).thenReturn(Optional.of(anyString));
+        when(container.get(Ref.of(String.class))).thenReturn(Optional.of(anyString));
 
         ComponentWithMultiInjectMethod component = new InjectedInstanceSupplier<>(ComponentWithMultiInjectMethod.class).get(container);
         assertNotNull(component);
@@ -240,15 +239,15 @@ public class InjectionTest {
       @Test
       public void should_include_dependency_in_injected_method(){
         InjectedInstanceSupplier<ComponentWithMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithMethodInject.class);
-        List<Type> dependencies = supplier.dependencyTypes();
-        assertArrayEquals(new Type[]{Dependency.class}, dependencies.toArray());
+        List<Ref> dependencies = supplier.dependencies();
+        assertArrayEquals(new Ref[]{Ref.of(Dependency.class)}, dependencies.toArray());
       }
 
       @Test
       public void should_include_supplier_dependency_in_injected_method(){
         InjectedInstanceSupplier<ComponentWithSupplierMethodDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierMethodDependency.class);
-        List<Type> dependencies = supplier.dependencyTypes();
-        assertArrayEquals(new Type[]{supplierType}, dependencies.toArray());
+        List<Ref> dependencies = supplier.dependencies();
+        assertArrayEquals(new Ref[]{Ref.of(supplierType)}, dependencies.toArray());
       }
     }
 

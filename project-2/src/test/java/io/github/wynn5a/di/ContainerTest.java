@@ -164,7 +164,7 @@ public class ContainerTest {
       containerConfig.bind(Dependency.class, dependency);
       containerConfig.bind(Component.class, component);
       Container container = containerConfig.getContainer();
-      Optional<Component> optionalComponent = container.get(Component.class);
+      Optional<Component> optionalComponent = container.get(Ref.of(Component.class));
       assertTrue(optionalComponent.isPresent());
     }
 
@@ -198,13 +198,13 @@ public class ContainerTest {
       Component component = new Component() {
       };
       containerConfig.bind(Component.class, component);
-      Component got = (Component) containerConfig.getContainer().get(Component.class).orElse(null);
+      Component got = (Component) containerConfig.getContainer().get(Ref.of(Component.class)).orElse(null);
       assertSame(component, got);
     }
 
     @Test
     public void should_return_empty_if_component_not_bind() {
-      Optional<Component> componentOp = containerConfig.getContainer().get(Component.class);
+      Optional<Component> componentOp = containerConfig.getContainer().get(Ref.of(Component.class));
       assertTrue(componentOp.isEmpty());
     }
 
@@ -213,7 +213,7 @@ public class ContainerTest {
     public void should_bind_type_to_a_injectable_instance(Class<? extends ComponentWithDependency> componentClass) {
       containerConfig.bind(ComponentWithDependency.class, componentClass);
       containerConfig.bind(Dependency.class, DependencyInstance.class);
-      Optional<ComponentWithDependency> got = containerConfig.getContainer().get(ComponentWithDependency.class);
+      Optional<ComponentWithDependency> got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class));
       assertTrue(got.isPresent());
       assertNotNull(got.get().getDependency());
     }
@@ -223,11 +223,9 @@ public class ContainerTest {
       Component instance = new Component() {
       };
       containerConfig.bind(Component.class, instance);
-      TypeLiteral<Supplier<Component>> literal = new TypeLiteral<>() {
-      };
-      ParameterizedType type = literal.getType();
       Container container = containerConfig.getContainer();
-      Supplier<Component> supplier = (Supplier<Component>) container.get(type).get();
+      Supplier<Component> supplier = container.get(new Ref<Supplier<Component>>() {
+      }).get();
       assertSame(instance, supplier.get());
     }
 
@@ -236,11 +234,8 @@ public class ContainerTest {
       Component instance = new Component() {
       };
       containerConfig.bind(Component.class, instance);
-      TypeLiteral<List<Component>> literal = new TypeLiteral<>() {
-      };
-      ParameterizedType type = literal.getType();
       Container container = containerConfig.getContainer();
-      assertFalse(container.get(type).isPresent());
+      assertFalse(container.get(new Ref<List<Component>>() {}).isPresent());
     }
 
     @Test
