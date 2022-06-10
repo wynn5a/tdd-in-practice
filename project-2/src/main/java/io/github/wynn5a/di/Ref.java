@@ -1,5 +1,6 @@
 package io.github.wynn5a.di;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.Objects;
  */
 public class Ref<T> {
 
+  private Annotation qualifier;
   private Class<T> componentType;
   private Type containerType;
 
@@ -24,6 +26,11 @@ public class Ref<T> {
   public Ref(){
     Type type = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     init(type);
+  }
+
+  public <T> Ref(Class<T> type, Annotation qualifier) {
+    init(type);
+    this.qualifier = qualifier;
   }
 
   private void init(Type type) {
@@ -43,8 +50,8 @@ public class Ref<T> {
     return new Ref<>((Class<?>) type);
   }
 
-  public static <T> Ref<T> of(Class<T> type) {
-    return new Ref<>(type);
+  public static <T> Ref<T> of(Class<T> type, Annotation qualifier) {
+    return new Ref<>(type, qualifier);
   }
 
   public Class<?> getComponentType() {
@@ -57,6 +64,10 @@ public class Ref<T> {
 
   public boolean isContainerType() {
     return containerType != null;
+  }
+
+  public Annotation getQualifier() {
+    return qualifier;
   }
 
   @Override

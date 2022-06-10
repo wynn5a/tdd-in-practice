@@ -36,7 +36,7 @@ public class InjectionTest {
                                                                            .getDeclaredField("dependencySupplier")
                                                                            .getGenericType();
     when(container.get(eq(Ref.of(supplierType)))).thenReturn(Optional.of(dependencySupplier));
-    when(container.get(Ref.of(Dependency.class))).thenReturn(Optional.of(dependency));
+    when(container.get(Ref.of(Dependency.class, null))).thenReturn(Optional.of(dependency));
   }
 
   private final Container container = mock(Container.class);
@@ -75,7 +75,7 @@ public class InjectionTest {
       public void should_include_dependency_in_injected_constructor(){
         InjectedInstanceSupplier<ComponentWithConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithConstructorDependency.class);
         List<Ref> dependencies = supplier.dependencies();
-        assertArrayEquals(new Ref[]{Ref.of(Dependency.class)}, dependencies.toArray());
+        assertArrayEquals(new Ref[]{Ref.of(Dependency.class, null)}, dependencies.toArray());
       }
 
       @Test
@@ -150,7 +150,7 @@ public class InjectionTest {
       public void should_include_dependency_in_injected_Field(){
         InjectedInstanceSupplier<ComponentWithFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithFieldInject.class);
         List<Ref> dependencies = supplier.dependencies();
-        assertArrayEquals(new Ref[]{Ref.of(Dependency.class)}, dependencies.toArray());
+        assertArrayEquals(new Ref[]{Ref.of(Dependency.class, null)}, dependencies.toArray());
       }
 
       @Test
@@ -219,7 +219,7 @@ public class InjectionTest {
       @Test
       public void should_inject_all_dependency_via_method_inject() {
         String anyString = "any";
-        when(container.get(Ref.of(String.class))).thenReturn(Optional.of(anyString));
+        when(container.get(Ref.of(String.class, null))).thenReturn(Optional.of(anyString));
 
         ComponentWithMultiInjectMethod component = new InjectedInstanceSupplier<>(ComponentWithMultiInjectMethod.class).get(container);
         assertNotNull(component);
@@ -240,7 +240,7 @@ public class InjectionTest {
       public void should_include_dependency_in_injected_method(){
         InjectedInstanceSupplier<ComponentWithMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithMethodInject.class);
         List<Ref> dependencies = supplier.dependencies();
-        assertArrayEquals(new Ref[]{Ref.of(Dependency.class)}, dependencies.toArray());
+        assertArrayEquals(new Ref[]{Ref.of(Dependency.class, null)}, dependencies.toArray());
       }
 
       @Test

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
@@ -164,7 +165,7 @@ public class ContainerTest {
       containerConfig.bind(Dependency.class, dependency);
       containerConfig.bind(Component.class, component);
       Container container = containerConfig.getContainer();
-      Optional<Component> optionalComponent = container.get(Ref.of(Component.class));
+      Optional<Component> optionalComponent = container.get(Ref.of(Component.class, null));
       assertTrue(optionalComponent.isPresent());
     }
 
@@ -198,13 +199,74 @@ public class ContainerTest {
       Component component = new Component() {
       };
       containerConfig.bind(Component.class, component);
-      Component got = (Component) containerConfig.getContainer().get(Ref.of(Component.class)).orElse(null);
+      Component got = containerConfig.getContainer().get(Ref.of(Component.class, null)).orElse(null);
+      assertSame(component, got);
+    }
+
+    static class NamedQualifier implements Annotation {
+
+      private final String qualifier;
+      public NamedQualifier(String qualifier) {
+        this.qualifier = qualifier;
+      }
+
+      @Override
+      public Class<? extends Annotation> annotationType() {
+        return jakarta.inject.Named.class;
+      }
+    }
+
+    @Test
+    public void should_bind_type_to_a_special_instance_with_qualifier() {
+      Component component = new Component() {
+      };
+      NamedQualifier one = new NamedQualifier("one");
+      containerConfig.bind(Component.class, component, one);
+      Component got = containerConfig.getContainer().get(Ref.of(Component.class, one)).orElse(null);
       assertSame(component, got);
     }
 
     @Test
+    public void should_bind_type_to_a_special_instance_with_multi_qualifiers() {
+      Component component = new Component() {
+      };
+      NamedQualifier one = new NamedQualifier("one");
+      NamedQualifier two = new NamedQualifier("two");
+      containerConfig.bind(Component.class, component, one, two);
+      Component got = containerConfig.getContainer().get(Ref.of(Component.class, one)).orElse(null);
+      Component gotTwo = containerConfig.getContainer().get(Ref.of(Component.class, two)).orElse(null);
+      assertSame(component, got);
+      assertSame(component, gotTwo);
+    }
+
+    @Test
+    public void should_bind_type_to_a_instance_class_with_qualifier() {
+      Dependency dependency = new Dependency() {
+      };
+      containerConfig.bind(Dependency.class, dependency);
+      NamedQualifier one = new NamedQualifier("one");
+      containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, one);
+      ComponentWithDependency got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, one)).orElse(null);
+      assertSame(dependency, got.getDependency());
+    }
+
+    @Test
+    public void should_bind_type_to_a_instance_class_with_multi_qualifiers() {
+      Dependency dependency = new Dependency() {
+      };
+      containerConfig.bind(Dependency.class, dependency);
+      NamedQualifier one = new NamedQualifier("one");
+      NamedQualifier two = new NamedQualifier("two");
+      containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, one, two);
+      ComponentWithDependency got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, one)).orElse(null);
+      ComponentWithDependency gotTwo = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, two)).orElse(null);
+      assertSame(dependency, got.getDependency());
+      assertSame(dependency, gotTwo.getDependency());
+    }
+
+    @Test
     public void should_return_empty_if_component_not_bind() {
-      Optional<Component> componentOp = containerConfig.getContainer().get(Ref.of(Component.class));
+      Optional<Component> componentOp = containerConfig.getContainer().get(Ref.of(Component.class, null));
       assertTrue(componentOp.isEmpty());
     }
 
@@ -213,7 +275,7 @@ public class ContainerTest {
     public void should_bind_type_to_a_injectable_instance(Class<? extends ComponentWithDependency> componentClass) {
       containerConfig.bind(ComponentWithDependency.class, componentClass);
       containerConfig.bind(Dependency.class, DependencyInstance.class);
-      Optional<ComponentWithDependency> got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class));
+      Optional<ComponentWithDependency> got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, null));
       assertTrue(got.isPresent());
       assertNotNull(got.get().getDependency());
     }
