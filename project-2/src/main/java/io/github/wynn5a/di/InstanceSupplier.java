@@ -12,7 +12,7 @@ public interface InstanceSupplier<T> {
 
   T get(Container container);
 
-  default List<Ref> dependencies() {
+  default List<InstanceTypeRef> dependencies() {
     return of();
   }
 }

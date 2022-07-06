@@ -8,5 +8,5 @@ import java.util.Optional;
  */
 public interface Container {
 
-  <T> Optional<T> get(Ref<T> ref);
+  <T> Optional<T> get(InstanceTypeRef<T> instanceTypeRef);
 }

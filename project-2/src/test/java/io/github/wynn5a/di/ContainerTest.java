@@ -165,7 +165,7 @@ public class ContainerTest {
       containerConfig.bind(Dependency.class, dependency);
       containerConfig.bind(Component.class, component);
       Container container = containerConfig.getContainer();
-      Optional<Component> optionalComponent = container.get(Ref.of(Component.class, null));
+      Optional<Component> optionalComponent = container.get(InstanceTypeRef.of(Component.class, null));
       assertTrue(optionalComponent.isPresent());
     }
 
@@ -199,7 +199,7 @@ public class ContainerTest {
       Component component = new Component() {
       };
       containerConfig.bind(Component.class, component);
-      Component got = containerConfig.getContainer().get(Ref.of(Component.class, null)).orElse(null);
+      Component got = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, null)).orElse(null);
       assertSame(component, got);
     }
 
@@ -222,7 +222,7 @@ public class ContainerTest {
       };
       NamedQualifier one = new NamedQualifier("one");
       containerConfig.bind(Component.class, component, one);
-      Component got = containerConfig.getContainer().get(Ref.of(Component.class, one)).orElse(null);
+      Component got = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, one)).orElse(null);
       assertSame(component, got);
     }
 
@@ -233,8 +233,8 @@ public class ContainerTest {
       NamedQualifier one = new NamedQualifier("one");
       NamedQualifier two = new NamedQualifier("two");
       containerConfig.bind(Component.class, component, one, two);
-      Component got = containerConfig.getContainer().get(Ref.of(Component.class, one)).orElse(null);
-      Component gotTwo = containerConfig.getContainer().get(Ref.of(Component.class, two)).orElse(null);
+      Component got = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, one)).orElse(null);
+      Component gotTwo = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, two)).orElse(null);
       assertSame(component, got);
       assertSame(component, gotTwo);
     }
@@ -246,7 +246,7 @@ public class ContainerTest {
       containerConfig.bind(Dependency.class, dependency);
       NamedQualifier one = new NamedQualifier("one");
       containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, one);
-      ComponentWithDependency got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, one)).orElse(null);
+      ComponentWithDependency got = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, one)).orElse(null);
       assertSame(dependency, got.getDependency());
     }
 
@@ -258,15 +258,15 @@ public class ContainerTest {
       NamedQualifier one = new NamedQualifier("one");
       NamedQualifier two = new NamedQualifier("two");
       containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, one, two);
-      ComponentWithDependency got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, one)).orElse(null);
-      ComponentWithDependency gotTwo = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, two)).orElse(null);
+      ComponentWithDependency got = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, one)).orElse(null);
+      ComponentWithDependency gotTwo = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, two)).orElse(null);
       assertSame(dependency, got.getDependency());
       assertSame(dependency, gotTwo.getDependency());
     }
 
     @Test
     public void should_return_empty_if_component_not_bind() {
-      Optional<Component> componentOp = containerConfig.getContainer().get(Ref.of(Component.class, null));
+      Optional<Component> componentOp = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, null));
       assertTrue(componentOp.isEmpty());
     }
 
@@ -275,7 +275,7 @@ public class ContainerTest {
     public void should_bind_type_to_a_injectable_instance(Class<? extends ComponentWithDependency> componentClass) {
       containerConfig.bind(ComponentWithDependency.class, componentClass);
       containerConfig.bind(Dependency.class, DependencyInstance.class);
-      Optional<ComponentWithDependency> got = containerConfig.getContainer().get(Ref.of(ComponentWithDependency.class, null));
+      Optional<ComponentWithDependency> got = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, null));
       assertTrue(got.isPresent());
       assertNotNull(got.get().getDependency());
     }
@@ -286,7 +286,7 @@ public class ContainerTest {
       };
       containerConfig.bind(Component.class, instance);
       Container container = containerConfig.getContainer();
-      Supplier<Component> supplier = container.get(new Ref<Supplier<Component>>() {
+      Supplier<Component> supplier = container.get(new InstanceTypeRef<Supplier<Component>>() {
       }).get();
       assertSame(instance, supplier.get());
     }
@@ -297,7 +297,7 @@ public class ContainerTest {
       };
       containerConfig.bind(Component.class, instance);
       Container container = containerConfig.getContainer();
-      assertFalse(container.get(new Ref<List<Component>>() {}).isPresent());
+      assertFalse(container.get(new InstanceTypeRef<List<Component>>() {}).isPresent());
     }
 
     @Test

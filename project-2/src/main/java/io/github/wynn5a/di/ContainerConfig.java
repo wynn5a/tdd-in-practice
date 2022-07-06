@@ -13,25 +13,23 @@ public class ContainerConfig {
 
   private final Map<InstanceType, InstanceSupplier<?>> instanceSuppliers = new HashMap<>();
 
-  public record InstanceType(Class<?> type, Annotation qualifier) {
-
-  }
-
-  public <T> void bind(Class<T> type, T instance) {
-    instanceSuppliers.put(new InstanceType(type, null), c -> instance);
-  }
-
   public <T> void bind(Class<T> type, T instance, Annotation... qualifiers) {
+    if (qualifiers.length == 0) {
+      instanceSuppliers.put(new InstanceType(type, null), c -> instance);
+      return;
+    }
+
     for (Annotation qualifier : qualifiers) {
       instanceSuppliers.put(new InstanceType(type, qualifier), c -> instance);
     }
   }
 
-  public <T, I extends T> void bind(Class<T> type, Class<I> instanceType) {
-    instanceSuppliers.put(new InstanceType(type, null), new InjectedInstanceSupplier<>(instanceType));
-  }
-
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType, Annotation... qualifiers) {
+    if (qualifiers.length == 0) {
+      instanceSuppliers.put(new InstanceType(type, null), new InjectedInstanceSupplier<>(instanceType));
+      return;
+    }
+
     for (Annotation qualifier : qualifiers) {
       instanceSuppliers.put(new InstanceType(type, qualifier), new InjectedInstanceSupplier<>(instanceType));
     }
@@ -44,15 +42,14 @@ public class ContainerConfig {
     return new Container() {
 
       @Override
-      public Optional get(Ref ref) {
-        if (ref.getQualifier() != null) {
-          return Optional.ofNullable(instanceSuppliers.get(new InstanceType(ref.getComponentType(), ref.getQualifier())))
-                         .map(s -> s.get(this));
+      public Optional get(InstanceTypeRef instanceTypeRef) {
+        if (instanceTypeRef.instanceType().qualifier() != null) {
+          return Optional.ofNullable(getSupplier(instanceTypeRef)).map(s -> s.get(this));
         }
 
-        InstanceSupplier<?> instanceSupplier = getSupplier(ref);
-        if (ref.isContainerType()) {
-          if (ref.getContainerType() != Supplier.class) {
+        InstanceSupplier<?> instanceSupplier = getSupplier(instanceTypeRef);
+        if (instanceTypeRef.isContainerType()) {
+          if (instanceTypeRef.getContainerType() != Supplier.class) {
             return Optional.empty();
           }
           return Optional.ofNullable(instanceSupplier).map(s -> (Supplier<Object>) () -> s.get(this));
@@ -62,15 +59,15 @@ public class ContainerConfig {
     };
   }
 
-  private InstanceSupplier<?> getSupplier(Ref ref) {
-    return instanceSuppliers.get(new InstanceType(ref.getComponentType(), ref.getQualifier()));
+  private InstanceSupplier<?> getSupplier(InstanceTypeRef instanceTypeRef) {
+    return instanceSuppliers.get(instanceTypeRef.instanceType());
   }
 
   private void checkDependencies(InstanceType component, Stack<Class<?>> visiting) {
-    for (Ref dependency : instanceSuppliers.get(component).dependencies()) {
-      InstanceType dependencyType = new InstanceType(dependency.getComponentType(), dependency.getQualifier());
+    for (InstanceTypeRef dependency : instanceSuppliers.get(component).dependencies()) {
+      InstanceType dependencyType = dependency.instanceType();
       if (!instanceSuppliers.containsKey(dependencyType)) {
-        throw new DependencyNotFoundException(component.type(), dependency.getComponentType());
+        throw new DependencyNotFoundException(component.type(), dependencyType.type());
       }
       if (!dependency.isContainerType()) {
         visiting.push(component.type());

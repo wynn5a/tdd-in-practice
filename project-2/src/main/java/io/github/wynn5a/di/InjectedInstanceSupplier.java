@@ -81,13 +81,13 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   @Override
-  public List<Ref> dependencies() {
+  public List<InstanceTypeRef> dependencies() {
     return Stream.of(Arrays.stream(constructor.getGenericParameterTypes()),
                      injectedFields.stream().map(Field::getGenericType),
                      injectedMethods.stream().map(Method::getGenericParameterTypes).flatMap(Arrays::stream))
                  .flatMap(Function.identity())
                  .distinct()
-                 .map(Ref::of)
+                 .map(InstanceTypeRef::of)
                  .toList();
   }
 
@@ -152,7 +152,7 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static Object getParameterByType(Container container, Type type) {
-    return container.get(Ref.of(type)).orElse(null);
+    return container.get(InstanceTypeRef.of(type)).orElse(null);
   }
 
   private static <T> void instanceTypeShouldBeInstantiable(Class<T> instanceType) {
