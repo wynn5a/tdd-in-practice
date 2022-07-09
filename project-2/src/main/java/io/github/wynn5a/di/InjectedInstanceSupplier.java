@@ -3,13 +3,17 @@ package io.github.wynn5a.di;
 import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,13 +86,26 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   @Override
   public List<InstanceTypeRef> dependencies() {
-    return Stream.of(Arrays.stream(constructor.getGenericParameterTypes()),
-                     injectedFields.stream().map(Field::getGenericType),
-                     injectedMethods.stream().map(Method::getGenericParameterTypes).flatMap(Arrays::stream))
-                 .flatMap(Function.identity())
-                 .distinct()
-                 .map(InstanceTypeRef::of)
+    return Stream.concat(Arrays.stream(constructor.getParameters()).map(InjectedInstanceSupplier::toInstanceTypeRef),
+                     Stream.of(injectedFields.stream().map(Field::getGenericType),
+                               injectedMethods.stream().map(Method::getGenericParameterTypes).flatMap(Arrays::stream))
+                           .flatMap(Function.identity())
+                           .distinct()
+                           .map(InstanceTypeRef::of))
                  .toList();
+  }
+
+  private static InstanceTypeRef toInstanceTypeRef(Parameter p) {
+    Annotation qualifier = Arrays.stream(p.getAnnotations()).filter(a -> a.annotationType()
+                                                                          .isAnnotationPresent(Qualifier.class))
+                                   .findFirst().orElse(null);
+
+    return InstanceTypeRef.of(p.getParameterizedType());
+  }
+
+  private InstanceTypeRef toInstanceTypeRef(Type type) {
+
+    return null;
   }
 
   private void injectedFieldShouldNotBeFinal() {

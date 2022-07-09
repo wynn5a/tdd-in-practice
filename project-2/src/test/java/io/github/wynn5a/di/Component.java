@@ -1,6 +1,8 @@
 package io.github.wynn5a.di;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Qualifier;
 import java.util.function.Supplier;
 
 interface Component {
@@ -189,6 +191,21 @@ class ComponentWithSupplierMethodDependency implements Component{
 class ComponentWithSupplierFieldDependency implements Component{
   @Inject private Supplier<Dependency> dependency;
   public Supplier<Dependency> getDependency() {
+    return dependency;
+  }
+}
+
+class ComponentWithQualifierConstructorInjectDependency implements ComponentWithDependency{
+
+  private final Dependency dependency;
+
+  @Inject
+  ComponentWithQualifierConstructorInjectDependency(@Named("one") Dependency dependency) {
+    this.dependency = dependency;
+  }
+
+  @Override
+  public Dependency getDependency() {
     return dependency;
   }
 }

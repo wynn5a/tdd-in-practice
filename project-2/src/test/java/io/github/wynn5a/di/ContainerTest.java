@@ -1,5 +1,6 @@
 package io.github.wynn5a.di;
 
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import io.github.wynn5a.di.exception.IllegalQualifierException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -203,27 +205,17 @@ public class ContainerTest {
       assertSame(component, got);
     }
 
-    static class NamedQualifier implements Annotation {
-
-      private final String qualifier;
-      public NamedQualifier(String qualifier) {
-        this.qualifier = qualifier;
-      }
-
-      @Override
-      public Class<? extends Annotation> annotationType() {
-        return jakarta.inject.Named.class;
-      }
+    @java.lang.annotation.Documented
+    @java.lang.annotation.Retention(RUNTIME)
+    @jakarta.inject.Qualifier
+    public @interface Two {
     }
 
-    @Test
-    public void should_bind_type_to_a_special_instance_with_qualifier() {
-      Component component = new Component() {
-      };
-      NamedQualifier one = new NamedQualifier("one");
-      containerConfig.bind(Component.class, component, one);
-      Component got = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, one)).orElse(null);
-      assertSame(component, got);
+    static class NamedQualifierTwo implements Two {
+      @Override
+      public Class<? extends Annotation> annotationType() {
+        return Two.class;
+      }
     }
 
     @Test
@@ -231,7 +223,7 @@ public class ContainerTest {
       Component component = new Component() {
       };
       NamedQualifier one = new NamedQualifier("one");
-      NamedQualifier two = new NamedQualifier("two");
+      NamedQualifierTwo two = new NamedQualifierTwo();
       containerConfig.bind(Component.class, component, one, two);
       Component got = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, one)).orElse(null);
       Component gotTwo = containerConfig.getContainer().get(InstanceTypeRef.of(Component.class, two)).orElse(null);
@@ -240,28 +232,38 @@ public class ContainerTest {
     }
 
     @Test
-    public void should_bind_type_to_a_instance_class_with_qualifier() {
-      Dependency dependency = new Dependency() {
-      };
-      containerConfig.bind(Dependency.class, dependency);
-      NamedQualifier one = new NamedQualifier("one");
-      containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, one);
-      ComponentWithDependency got = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, one)).orElse(null);
-      assertSame(dependency, got.getDependency());
-    }
-
-    @Test
     public void should_bind_type_to_a_instance_class_with_multi_qualifiers() {
       Dependency dependency = new Dependency() {
       };
       containerConfig.bind(Dependency.class, dependency);
       NamedQualifier one = new NamedQualifier("one");
-      NamedQualifier two = new NamedQualifier("two");
+      NamedQualifierTwo two = new NamedQualifierTwo();
       containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, one, two);
       ComponentWithDependency got = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, one)).orElse(null);
       ComponentWithDependency gotTwo = containerConfig.getContainer().get(InstanceTypeRef.of(ComponentWithDependency.class, two)).orElse(null);
       assertSame(dependency, got.getDependency());
       assertSame(dependency, gotTwo.getDependency());
+    }
+
+
+    static class InvalidQualifier implements Annotation {
+      @Override
+      public Class<? extends Annotation> annotationType() {
+        return Test.class;
+      }
+    }
+
+    @Test
+    public void should_raise_exception_when_illegal_qualifier_provided_to_instance(){
+      Dependency dependency = new Dependency() {
+      };
+      InvalidQualifier bad = new InvalidQualifier();
+      assertThrows(IllegalQualifierException.class,()-> containerConfig.bind(Dependency.class, dependency, bad));
+    }
+    @Test
+    public void should_raise_exception_when_illegal_qualifier_provided_to_type(){
+      InvalidQualifier bad = new InvalidQualifier();
+      assertThrows(IllegalQualifierException.class,()-> containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, bad));
     }
 
     @Test

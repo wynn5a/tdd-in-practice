@@ -84,6 +84,14 @@ public class InjectionTest {
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(supplierType)}, dependencies.toArray());
       }
+
+      @Test
+      public void should_include_dependency_with_qualifier(){
+        InjectedInstanceSupplier<ComponentWithQualifierConstructorInjectDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierConstructorInjectDependency.class);
+        List<InstanceTypeRef> dependencies = supplier.dependencies();
+        assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))}, dependencies.toArray());
+      }
+
     }
 
     @Nested

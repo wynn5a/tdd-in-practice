@@ -2,7 +2,10 @@ package io.github.wynn5a.di;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import io.github.wynn5a.di.exception.IllegalQualifierException;
+import jakarta.inject.Qualifier;
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -18,7 +21,7 @@ public class ContainerConfig {
       instanceSuppliers.put(new InstanceType(type, null), c -> instance);
       return;
     }
-
+    checkQualifiers(qualifiers);
     for (Annotation qualifier : qualifiers) {
       instanceSuppliers.put(new InstanceType(type, qualifier), c -> instance);
     }
@@ -30,8 +33,15 @@ public class ContainerConfig {
       return;
     }
 
+    checkQualifiers(qualifiers);
     for (Annotation qualifier : qualifiers) {
       instanceSuppliers.put(new InstanceType(type, qualifier), new InjectedInstanceSupplier<>(instanceType));
+    }
+  }
+
+  private void checkQualifiers(Annotation[] qualifiers) {
+    if (Arrays.stream(qualifiers).anyMatch(q -> !q.annotationType().isAnnotationPresent(Qualifier.class))) {
+      throw new IllegalQualifierException();
     }
   }
 
