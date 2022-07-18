@@ -2,7 +2,6 @@ package io.github.wynn5a.di;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import jakarta.inject.Qualifier;
 import java.util.function.Supplier;
 
 interface Component {
@@ -207,5 +206,12 @@ class ComponentWithQualifierConstructorInjectDependency implements ComponentWith
   @Override
   public Dependency getDependency() {
     return dependency;
+  }
+}
+
+class ComponentWithQualifierMethodInject implements Component{
+  @Inject
+  public void setDependency(@Named("one") Dependency dependency){
+
   }
 }

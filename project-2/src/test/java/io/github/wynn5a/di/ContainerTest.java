@@ -190,6 +190,27 @@ public class ContainerTest {
       }
       return arguments.stream();
     }
+
+    @Nested
+    class WithQualifier{
+      @Test
+      public void should_raise_exception_if_no_qualified_dependency_found(){
+        containerConfig.bind(Dependency.class, new Dependency() {
+        });
+        containerConfig.bind(ComponentWithDependency.class, ComponentWithQualifierConstructorInjectDependency.class);
+
+        assertThrows(DependencyNotFoundException.class, ()->containerConfig.getContainer());
+      }
+
+      @Test
+      public void should_raise_exception_if_wrong_qualified_dependency_found(){
+        containerConfig.bind(Dependency.class, new Dependency() {
+        }, new NamedQualifier("two"));
+        containerConfig.bind(ComponentWithDependency.class, ComponentWithQualifierConstructorInjectDependency.class);
+
+        assertThrows(DependencyNotFoundException.class, ()->containerConfig.getContainer());
+      }
+    }
   }
 
   @Nested

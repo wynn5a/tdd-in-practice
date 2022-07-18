@@ -275,5 +275,17 @@ public class InjectionTest {
         assertThrows(IllegalComponentException.class, () -> new InjectedInstanceSupplier<>(TypedParameterInjectMethod.class));
       }
     }
+
+    @Nested
+    class WithQualifier{
+      @Test
+      public void should_include_qualifier_when_get_dependencies_by_method_inject(){
+        InjectedInstanceSupplier<ComponentWithQualifierMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierMethodInject.class);
+        List<InstanceTypeRef> dependencies = supplier.dependencies();
+        assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))},
+            dependencies.toArray()
+        );
+      }
+    }
   }
 }

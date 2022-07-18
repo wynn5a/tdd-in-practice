@@ -32,10 +32,15 @@ public class InstanceTypeRef<T> {
     init(type, qualifier);
   }
 
+  public InstanceTypeRef(ParameterizedType type, Annotation qualifier) {
+    init(type, qualifier);
+  }
+
   private void init(Type type, Annotation qualifier) {
     if (type instanceof ParameterizedType) {
       this.containerType = ((ParameterizedType) type).getRawType();
-      this.instanceType = new InstanceType((Class<T>) ((ParameterizedType) type).getActualTypeArguments()[0], qualifier);
+      this.instanceType = new InstanceType((Class<T>) ((ParameterizedType) type).getActualTypeArguments()[0],
+          qualifier);
     } else {
       this.containerType = null;
       this.instanceType = new InstanceType((Class<T>) type, qualifier);
@@ -47,6 +52,13 @@ public class InstanceTypeRef<T> {
       return new InstanceTypeRef<>((ParameterizedType) type);
     }
     return new InstanceTypeRef<>((Class<?>) type);
+  }
+
+  public static InstanceTypeRef of(Type type, Annotation qualifier) {
+    if (type instanceof ParameterizedType) {
+      return new InstanceTypeRef<>((ParameterizedType) type, qualifier);
+    }
+    return new InstanceTypeRef<>((Class<?>) type, qualifier);
   }
 
   public static <T> InstanceTypeRef<T> of(Class<T> type, Annotation qualifier) {
@@ -74,11 +86,20 @@ public class InstanceTypeRef<T> {
       return false;
     }
     InstanceTypeRef<?> instanceTypeRef = (InstanceTypeRef<?>) o;
-    return Objects.equals(containerType, instanceTypeRef.containerType) && instanceType.equals(instanceTypeRef.instanceType);
+    return Objects.equals(containerType, instanceTypeRef.containerType) && instanceType.equals(
+        instanceTypeRef.instanceType);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(containerType, instanceType);
+  }
+
+  @Override
+  public String toString() {
+    return "InstanceTypeRef{" +
+        "containerType=" + containerType +
+        ", instanceType=" + instanceType +
+        '}';
   }
 }
