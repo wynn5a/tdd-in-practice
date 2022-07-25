@@ -85,19 +85,26 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   @Override
   public List<InstanceTypeRef> dependencies() {
-    return Stream.concat(Arrays.stream(constructor.getParameters()).map(InjectedInstanceSupplier::toInstanceTypeRef),
-            Stream.of(injectedFields.stream().map(Field::getGenericType),
-                    injectedMethods.stream().map(Method::getGenericParameterTypes).flatMap(Arrays::stream))
-                .flatMap(Function.identity())
-                .distinct()
-                .map(InstanceTypeRef::of))
-        .toList();
+    return Stream.of(Arrays.stream(constructor.getParameters()).map(InjectedInstanceSupplier::toInstanceTypeRef),
+                     injectedFields.stream().map(InjectedInstanceSupplier::toInstanceTypeRef),
+                     injectedMethods.stream().map(Method::getParameters).flatMap(Arrays::stream)
+                                    .map(InjectedInstanceSupplier::toInstanceTypeRef))
+                 .flatMap(Function.identity())
+                 .distinct()
+                 .toList();
+  }
+
+  private static InstanceTypeRef toInstanceTypeRef(Field f) {
+    Annotation qualifier = Arrays.stream(f.getAnnotations()).filter(a -> a.annotationType()
+                                                                          .isAnnotationPresent(Qualifier.class))
+                                 .findFirst().orElse(null);
+    return InstanceTypeRef.of(f.getGenericType(), qualifier);
   }
 
   private static InstanceTypeRef toInstanceTypeRef(Parameter p) {
     Annotation qualifier = Arrays.stream(p.getAnnotations()).filter(a -> a.annotationType()
-            .isAnnotationPresent(Qualifier.class))
-        .findFirst().orElse(null);
+                                                                          .isAnnotationPresent(Qualifier.class))
+                                 .findFirst().orElse(null);
     return InstanceTypeRef.of(p.getParameterizedType(), qualifier);
   }
 

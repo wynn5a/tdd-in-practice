@@ -48,7 +48,6 @@ public class ContainerConfig {
 
   public Container getContainer() {
     instanceSuppliers.keySet().forEach(c -> checkDependencies(c, new Stack<>()));
-
     return new Container() {
 
       @Override
@@ -77,7 +76,7 @@ public class ContainerConfig {
     for (InstanceTypeRef dependency : instanceSuppliers.get(component).dependencies()) {
       InstanceType dependencyType = dependency.instanceType();
       if (!instanceSuppliers.containsKey(dependencyType)) {
-        throw new DependencyNotFoundException(component.type(), dependencyType.type());
+        throw new DependencyNotFoundException(component, dependencyType);
       }
       if (!dependency.isContainerType()) {
         visiting.push(component.type());

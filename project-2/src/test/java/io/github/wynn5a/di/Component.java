@@ -13,6 +13,7 @@ class SomeComponent implements Component {
 }
 
 interface ComponentWithDependency extends Component {
+
   Dependency getDependency();
 }
 
@@ -161,7 +162,8 @@ class SubWithNonInjectedOverrideMethod extends ComponentWithMethodInjectWithoutD
   }
 }
 
-class ComponentWithSupplierConstructorDependency implements Component{
+class ComponentWithSupplierConstructorDependency implements Component {
+
   private final Supplier<Dependency> dependency;
 
   @Inject
@@ -174,7 +176,8 @@ class ComponentWithSupplierConstructorDependency implements Component{
   }
 }
 
-class ComponentWithSupplierMethodDependency implements Component{
+class ComponentWithSupplierMethodDependency implements Component {
+
   private Supplier<Dependency> dependency;
 
   @Inject
@@ -187,14 +190,17 @@ class ComponentWithSupplierMethodDependency implements Component{
   }
 }
 
-class ComponentWithSupplierFieldDependency implements Component{
-  @Inject private Supplier<Dependency> dependency;
+class ComponentWithSupplierFieldDependency implements Component {
+
+  @Inject
+  private Supplier<Dependency> dependency;
+
   public Supplier<Dependency> getDependency() {
     return dependency;
   }
 }
 
-class ComponentWithQualifierConstructorInjectDependency implements ComponentWithDependency{
+class ComponentWithQualifierConstructorInjectDependency implements ComponentWithDependency {
 
   private final Dependency dependency;
 
@@ -209,9 +215,17 @@ class ComponentWithQualifierConstructorInjectDependency implements ComponentWith
   }
 }
 
-class ComponentWithQualifierMethodInject implements Component{
+class ComponentWithQualifierMethodInject implements Component {
+
   @Inject
-  public void setDependency(@Named("one") Dependency dependency){
+  public void setDependency(@Named("one") Dependency dependency) {
 
   }
+}
+
+class ComponentWithQualifierFieldInject implements Component {
+
+  @Inject
+  @Named("one")
+  Dependency dependency;
 }

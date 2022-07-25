@@ -30,11 +30,12 @@ public class InjectionTest {
 
   private final Supplier<Dependency> dependencySupplier = mock(Supplier.class);
   private ParameterizedType supplierType;
+
   @BeforeEach
   public void setup() throws NoSuchFieldException {
     supplierType = (ParameterizedType) InjectionTest.this.getClass()
-                                                                           .getDeclaredField("dependencySupplier")
-                                                                           .getGenericType();
+                                                         .getDeclaredField("dependencySupplier")
+                                                         .getGenericType();
     when(container.get(eq(InstanceTypeRef.of(supplierType)))).thenReturn(Optional.of(dependencySupplier));
     when(container.get(InstanceTypeRef.of(Dependency.class, null))).thenReturn(Optional.of(dependency));
   }
@@ -72,24 +73,25 @@ public class InjectionTest {
       }
 
       @Test
-      public void should_include_dependency_in_injected_constructor(){
+      public void should_include_dependency_in_injected_constructor() {
         InjectedInstanceSupplier<ComponentWithConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithConstructorDependency.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, null)}, dependencies.toArray());
       }
 
       @Test
-      public void should_include_supplier_dependency_in_injected_constructor(){
+      public void should_include_supplier_dependency_in_injected_constructor() {
         InjectedInstanceSupplier<ComponentWithSupplierConstructorDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierConstructorDependency.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(supplierType)}, dependencies.toArray());
       }
 
       @Test
-      public void should_include_dependency_with_qualifier(){
+      public void should_include_dependency_with_qualifier() {
         InjectedInstanceSupplier<ComponentWithQualifierConstructorInjectDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierConstructorInjectDependency.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
-        assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))}, dependencies.toArray());
+        assertArrayEquals(new InstanceTypeRef[]{
+            InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))}, dependencies.toArray());
       }
 
     }
@@ -122,6 +124,19 @@ public class InjectionTest {
       }
     }
 
+
+    @Nested
+    class WithQualifier {
+
+      @Test
+      public void should_include_qualifier_when_get_dependencies_by_constructor_inject() {
+        InjectedInstanceSupplier<ComponentWithQualifierConstructorInjectDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierConstructorInjectDependency.class);
+        List<InstanceTypeRef> dependencies = supplier.dependencies();
+        assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))},
+            dependencies.toArray()
+        );
+      }
+    }
   }
 
   @Nested
@@ -155,14 +170,14 @@ public class InjectionTest {
       }
 
       @Test
-      public void should_include_dependency_in_injected_Field(){
+      public void should_include_dependency_in_injected_Field() {
         InjectedInstanceSupplier<ComponentWithFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithFieldInject.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, null)}, dependencies.toArray());
       }
 
       @Test
-      public void should_include_supplier_dependency_in_injected_field(){
+      public void should_include_supplier_dependency_in_injected_field() {
         InjectedInstanceSupplier<ComponentWithSupplierFieldDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierFieldDependency.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(supplierType)}, dependencies.toArray());
@@ -176,6 +191,19 @@ public class InjectionTest {
       public void should_throw_exception_if_injected_field_is_final() {
         IllegalComponentException e = assertThrows(IllegalComponentException.class, () -> new InjectedInstanceSupplier<>(ComponentWithFinalFieldInject.class));
         assertEquals("Field 'dependency' is failed to inject because it is final", e.getMessage());
+      }
+    }
+
+    @Nested
+    class WithQualifier {
+
+      @Test
+      public void should_include_qualifier_when_get_dependencies_by_field_inject() {
+        InjectedInstanceSupplier<ComponentWithQualifierFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierFieldInject.class);
+        List<InstanceTypeRef> dependencies = supplier.dependencies();
+        assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))},
+            dependencies.toArray()
+        );
       }
     }
   }
@@ -245,14 +273,14 @@ public class InjectionTest {
       }
 
       @Test
-      public void should_include_dependency_in_injected_method(){
+      public void should_include_dependency_in_injected_method() {
         InjectedInstanceSupplier<ComponentWithMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithMethodInject.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, null)}, dependencies.toArray());
       }
 
       @Test
-      public void should_include_supplier_dependency_in_injected_method(){
+      public void should_include_supplier_dependency_in_injected_method() {
         InjectedInstanceSupplier<ComponentWithSupplierMethodDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithSupplierMethodDependency.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(supplierType)}, dependencies.toArray());
@@ -277,9 +305,10 @@ public class InjectionTest {
     }
 
     @Nested
-    class WithQualifier{
+    class WithQualifier {
+
       @Test
-      public void should_include_qualifier_when_get_dependencies_by_method_inject(){
+      public void should_include_qualifier_when_get_dependencies_by_method_inject() {
         InjectedInstanceSupplier<ComponentWithQualifierMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierMethodInject.class);
         List<InstanceTypeRef> dependencies = supplier.dependencies();
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))},
