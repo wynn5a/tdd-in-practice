@@ -1,6 +1,7 @@
 package io.github.wynn5a.di;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -11,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
 import io.github.wynn5a.di.exception.IllegalQualifierException;
+import jakarta.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -211,6 +213,30 @@ public class ContainerTest {
         DependencyNotFoundException e = assertThrows(DependencyNotFoundException.class, () -> containerConfig.getContainer());
         assertEquals(new InstanceType(Dependency.class, new NamedQualifier("one")), e.getDependency());
       }
+
+      //A -> @named("one")Dependency -> @Named("two")A
+      @Test
+      public void should_get_dependency_with_different_qualifier_in_dependencies() {
+        containerConfig.bind(Dependency.class, new Dependency() {}, new NamedQualifier("one"));
+        containerConfig.bind(Dependency.class, A.class, new NamedQualifier("two"));
+        containerConfig.bind(Dependency.class, B.class);
+
+        assertDoesNotThrow(() -> containerConfig.getContainer());
+      }
+
+      static class A implements Dependency {
+
+        @Inject
+        @jakarta.inject.Named("one")
+        Dependency dependency;
+      }
+
+      static class B implements Dependency {
+
+        @Inject
+        @jakarta.inject.Named("two")
+        Dependency dependency;
+      }
     }
   }
 
@@ -269,6 +295,8 @@ public class ContainerTest {
       ComponentWithDependency gotTwo = containerConfig.getContainer()
                                                       .get(InstanceTypeRef.of(ComponentWithDependency.class, two))
                                                       .orElse(null);
+      assertNotNull(got);
+      assertNotNull(gotTwo);
       assertSame(dependency, got.getDependency());
       assertSame(dependency, gotTwo.getDependency());
     }

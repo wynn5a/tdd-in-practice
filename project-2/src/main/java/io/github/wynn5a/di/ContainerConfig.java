@@ -72,15 +72,15 @@ public class ContainerConfig {
     return instanceSuppliers.get(instanceTypeRef.instanceType());
   }
 
-  private void checkDependencies(InstanceType component, Stack<Class<?>> visiting) {
+  private void checkDependencies(InstanceType component, Stack<InstanceType> visiting) {
     for (InstanceTypeRef dependency : instanceSuppliers.get(component).dependencies()) {
       InstanceType dependencyType = dependency.instanceType();
       if (!instanceSuppliers.containsKey(dependencyType)) {
         throw new DependencyNotFoundException(component, dependencyType);
       }
       if (!dependency.isContainerType()) {
-        visiting.push(component.type());
-        if (visiting.contains(dependencyType.type())) {
+        visiting.push(component);
+        if (visiting.contains(dependencyType)) {
           throw new CyclicDependencyFoundException(visiting);
         }
         checkDependencies(dependencyType, visiting);
