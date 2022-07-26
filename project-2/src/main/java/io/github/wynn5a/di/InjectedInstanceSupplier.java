@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -32,6 +33,7 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   private final Constructor<T> constructor;
   private final List<Field> injectedFields;
   private final List<Method> injectedMethods;
+  private final List<InstanceTypeRef> dependencies;
 
   public InjectedInstanceSupplier(Class<T> instanceType) {
     instanceTypeShouldBeInstantiable(instanceType);
@@ -40,6 +42,7 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
     injectedFieldShouldNotBeFinal();
     this.injectedMethods = getInjectedMethods(instanceType);
     injectedMethodShouldNotHasTypeParameter();
+    dependencies = dependencies();
   }
 
   private static List<Method> getInjectedMethods(Class<?> instanceType) {
@@ -95,17 +98,24 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static InstanceTypeRef toInstanceTypeRef(Field f) {
-    Annotation qualifier = Arrays.stream(f.getAnnotations()).filter(a -> a.annotationType()
-                                                                          .isAnnotationPresent(Qualifier.class))
-                                 .findFirst().orElse(null);
-    return InstanceTypeRef.of(f.getGenericType(), qualifier);
+    return InstanceTypeRef.of(f.getGenericType(), getQualifier(f));
   }
 
   private static InstanceTypeRef toInstanceTypeRef(Parameter p) {
-    Annotation qualifier = Arrays.stream(p.getAnnotations()).filter(a -> a.annotationType()
-                                                                          .isAnnotationPresent(Qualifier.class))
-                                 .findFirst().orElse(null);
-    return InstanceTypeRef.of(p.getParameterizedType(), qualifier);
+    return InstanceTypeRef.of(p.getParameterizedType(), getQualifier(p));
+  }
+
+  private static Annotation getQualifier(AnnotatedElement annotated) {
+    List<Annotation> annotations = Arrays.stream(annotated.getAnnotations())
+                                         .filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).toList();
+    if(annotations.size() == 0){
+      return null;
+    }
+    if(annotations.size() > 1){
+      String annotationString = annotations.stream().map(Annotation::toString).collect(Collectors.joining(", "));
+      throw new IllegalComponentException("multi qualifier found in component: " + annotationString);
+    }
+    return annotations.get(0);
   }
 
   private void injectedFieldShouldNotBeFinal() {
@@ -158,18 +168,18 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   private static Object getParameter(Container container, Field f) {
     Type type = f.getGenericType();
-    return getParameterByType(container, type);
+    return getParameterByType(container, type, getQualifier(f));
   }
 
   private static Object[] getParameters(Container container, Executable m) {
     return Arrays.stream(m.getParameters()).map(p -> {
       Type type = p.getParameterizedType();
-      return getParameterByType(container, type);
+      return getParameterByType(container, type, getQualifier(p));
     }).toArray();
   }
 
-  private static Object getParameterByType(Container container, Type type) {
-    return container.get(InstanceTypeRef.of(type)).orElse(null);
+  private static Object getParameterByType(Container container, Type type, Annotation qualifier) {
+    return container.get(InstanceTypeRef.of(type, qualifier)).orElse(null);
   }
 
   private static <T> void instanceTypeShouldBeInstantiable(Class<T> instanceType) {

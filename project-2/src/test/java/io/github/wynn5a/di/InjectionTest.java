@@ -9,9 +9,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.github.wynn5a.di.ContainerTest.TypeBinding.Two;
 import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +21,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * @author wynn5a
@@ -128,6 +131,19 @@ public class InjectionTest {
     @Nested
     class WithQualifier {
 
+      @BeforeEach
+      public void before() {
+        Mockito.reset(container);
+        when(container.get(InstanceTypeRef.of(Dependency.class, new NamedQualifier("one")))).thenReturn(Optional.ofNullable(dependency));
+      }
+
+      @Test
+      public void should_get_dependencies_by_constructor_inject_with_qualifier() {
+        InjectedInstanceSupplier<ComponentWithQualifierConstructorInjectDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierConstructorInjectDependency.class);
+        ComponentWithQualifierConstructorInjectDependency component = supplier.get(container);
+        assertSame(dependency, component.getDependency());
+      }
+
       @Test
       public void should_include_qualifier_when_get_dependencies_by_constructor_inject() {
         InjectedInstanceSupplier<ComponentWithQualifierConstructorInjectDependency> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierConstructorInjectDependency.class);
@@ -135,6 +151,12 @@ public class InjectionTest {
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))},
             dependencies.toArray()
         );
+      }
+
+      @Test
+      public void should_throw_exception_if_multi_qualifier_provided_when_inject_by_constructor() {
+        assertThrows(IllegalComponentException.class,
+            () -> new InjectedInstanceSupplier<>(ComponentWithMultiQualifierMethodInject.class));
       }
     }
   }
@@ -197,6 +219,19 @@ public class InjectionTest {
     @Nested
     class WithQualifier {
 
+      @BeforeEach
+      public void before() {
+        Mockito.reset(container);
+        when(container.get(InstanceTypeRef.of(Dependency.class, new NamedQualifier("one")))).thenReturn(Optional.of(dependency));
+      }
+
+      @Test
+      public void should_get_dependencies_by_field_inject_with_qualifier() {
+        InjectedInstanceSupplier<ComponentWithQualifierFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierFieldInject.class);
+        ComponentWithQualifierFieldInject component = supplier.get(container);
+        assertSame(dependency, component.getDependency());
+      }
+
       @Test
       public void should_include_qualifier_when_get_dependencies_by_field_inject() {
         InjectedInstanceSupplier<ComponentWithQualifierFieldInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierFieldInject.class);
@@ -204,6 +239,12 @@ public class InjectionTest {
         assertArrayEquals(new InstanceTypeRef[]{InstanceTypeRef.of(Dependency.class, new NamedQualifier("one"))},
             dependencies.toArray()
         );
+      }
+
+      @Test
+      public void should_throw_exception_if_multi_qualifier_provided_when_inject_by_field() {
+        assertThrows(IllegalComponentException.class,
+            () -> new InjectedInstanceSupplier<>(ComponentWithMultiQualifierFieldInject.class));
       }
     }
   }
@@ -307,6 +348,19 @@ public class InjectionTest {
     @Nested
     class WithQualifier {
 
+      @BeforeEach
+      public void before() {
+        Mockito.reset(container);
+        when(container.get(InstanceTypeRef.of(Dependency.class, new NamedQualifier("one")))).thenReturn(Optional.of(dependency));
+      }
+
+      @Test
+      public void should_get_dependency_when_method_inject_with_qualifier() {
+        InjectedInstanceSupplier<ComponentWithQualifierMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierMethodInject.class);
+        ComponentWithQualifierMethodInject component = supplier.get(container);
+        assertSame(dependency, component.getDependency());
+      }
+
       @Test
       public void should_include_qualifier_when_get_dependencies_by_method_inject() {
         InjectedInstanceSupplier<ComponentWithQualifierMethodInject> supplier = new InjectedInstanceSupplier<>(ComponentWithQualifierMethodInject.class);
@@ -315,6 +369,36 @@ public class InjectionTest {
             dependencies.toArray()
         );
       }
+
+      @Test
+      public void should_throw_exception_if_multi_qualifier_provided_when_inject_by_method() {
+        assertThrows(IllegalComponentException.class,
+            () -> new InjectedInstanceSupplier<>(ComponentWithMultiQualifierMethodInject.class));
+      }
     }
+  }
+}
+
+class ComponentWithMultiQualifierMethodInject {
+
+  @Inject
+  public void install(@Named("one") @Two Dependency dependency) {
+
+  }
+}
+
+class ComponentWithMultiQualifierFieldInject {
+
+  @Inject
+  @Named("one")
+  @Two
+  Dependency dependency;
+}
+
+class ComponentWithMultiQualifierConstructorInject {
+
+  @Inject
+  public ComponentWithMultiQualifierConstructorInject(@Named("one") @Two Dependency dependency) {
+
   }
 }

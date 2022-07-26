@@ -214,7 +214,7 @@ public class ContainerTest {
         assertEquals(new InstanceType(Dependency.class, new NamedQualifier("one")), e.getDependency());
       }
 
-      //A -> @named("one")Dependency -> @Named("two")A
+      //A -> @named("one")Dependency -> @Named("two")dependency
       @Test
       public void should_get_dependency_with_different_qualifier_in_dependencies() {
         containerConfig.bind(Dependency.class, new Dependency() {}, new NamedQualifier("one"));

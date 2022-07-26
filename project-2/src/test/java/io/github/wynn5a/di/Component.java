@@ -215,17 +215,28 @@ class ComponentWithQualifierConstructorInjectDependency implements ComponentWith
   }
 }
 
-class ComponentWithQualifierMethodInject implements Component {
+class ComponentWithQualifierMethodInject implements ComponentWithDependency {
+
+  private Dependency dependency;
 
   @Inject
   public void setDependency(@Named("one") Dependency dependency) {
+    this.dependency = dependency;
+  }
 
+  public Dependency getDependency() {
+    return dependency;
   }
 }
 
-class ComponentWithQualifierFieldInject implements Component {
+class ComponentWithQualifierFieldInject implements ComponentWithDependency {
 
   @Inject
   @Named("one")
   Dependency dependency;
+
+  @Override
+  public Dependency getDependency() {
+    return dependency;
+  }
 }
