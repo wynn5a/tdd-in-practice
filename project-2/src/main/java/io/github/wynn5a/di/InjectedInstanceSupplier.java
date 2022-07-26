@@ -1,25 +1,21 @@
 package io.github.wynn5a.di;
 
+import static java.util.Arrays.stream;
+
 import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
-import jakarta.inject.Qualifier;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -30,55 +26,57 @@ import java.util.stream.Stream;
  */
 public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
-  private final Constructor<T> constructor;
-  private final List<Field> injectedFields;
-  private final List<Method> injectedMethods;
-  private final List<InstanceTypeRef> dependencies;
+  private final Injectable<Constructor<T>> injectConstructor;
+  private final List<Injectable<Field>> injectFields;
+  private final List<Injectable<Method>> injectMethods;
 
   public InjectedInstanceSupplier(Class<T> instanceType) {
     instanceTypeShouldBeInstantiable(instanceType);
-    this.constructor = getInjectedConstructor(instanceType);
-    this.injectedFields = getInjectedFields(instanceType);
+
+    injectConstructor = getInjectConstructor(instanceType);
+    injectFields = getInjectFields(instanceType);
+    injectMethods = getInjectMethods(instanceType);
+
     injectedFieldShouldNotBeFinal();
-    this.injectedMethods = getInjectedMethods(instanceType);
     injectedMethodShouldNotHasTypeParameter();
-    dependencies = dependencies();
   }
 
-  private static List<Method> getInjectedMethods(Class<?> instanceType) {
+  private static <T> List<Injectable<Method>> getInjectMethods(Class<T> instanceType) {
     List<Method> results = traverse(instanceType, (methods, current) -> injectable(current.getDeclaredMethods())
         .filter(m -> !exists(methods, m))
         .filter(m -> !isOverridden(instanceType, m, current))
         .toList());
     Collections.reverse(results);
-    return results;
+    return results.stream().map(Injectable::of).toList();
   }
 
-  private static List<Field> getInjectedFields(Class<?> instanceType) {
-    return traverse(instanceType, (fields, current) -> injectable(current.getDeclaredFields()).toList());
+  private static <T> List<Injectable<Field>> getInjectFields(Class<T> instanceType) {
+    return InjectedInstanceSupplier.<Field>traverse(instanceType, (fields, current) -> injectable(current.getDeclaredFields()).toList())
+                                   .stream().map(Injectable::of).toList();
   }
 
-  @SuppressWarnings("unchecked")
-  private static <I> Constructor<I> getInjectedConstructor(Class<I> instanceType) {
+  private static <T> Injectable<Constructor<T>> getInjectConstructor(Class<T> instanceType) {
     List<Constructor<?>> allConstructors = injectable(instanceType.getDeclaredConstructors()).toList();
     if (allConstructors.size() > 1) {
       throw new MultiInjectAnnotationFoundException();
     }
-
-    return (Constructor<I>) allConstructors.stream().findFirst().orElseGet(() -> getDefaultConstructor(instanceType));
+    return Injectable.of((Constructor<T>) allConstructors.stream().findFirst()
+                                                         .orElseGet(() -> getDefaultConstructor(instanceType)));
   }
 
   @Override
   public T get(Container container) {
     try {
-      T t = constructor.newInstance(getParameters(container, constructor));
-      for (Field f : injectedFields) {
+      T t = injectConstructor.element().newInstance(injectConstructor.getDependencies(container));
+      for (Injectable<Field> i : injectFields) {
+        Field f = i.element();
         f.setAccessible(true);
-        f.set(t, getParameter(container, f));
+        f.set(t, i.getDependencies(container)[0]);
       }
-      for (Method m : injectedMethods) {
+      for (Injectable<Method> i : injectMethods) {
+        Method m = i.element();
         m.setAccessible(true);
-        m.invoke(t, getParameters(container, m));
+        m.invoke(t, i.getDependencies(container));
       }
       return t;
     } catch (Exception e) {
@@ -88,47 +86,28 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   @Override
   public List<InstanceTypeRef> dependencies() {
-    return Stream.of(Arrays.stream(constructor.getParameters()).map(InjectedInstanceSupplier::toInstanceTypeRef),
-                     injectedFields.stream().map(InjectedInstanceSupplier::toInstanceTypeRef),
-                     injectedMethods.stream().map(Method::getParameters).flatMap(Arrays::stream)
-                                    .map(InjectedInstanceSupplier::toInstanceTypeRef))
+    return Stream.of(stream(injectConstructor.required()),
+                     injectFields.stream().map(Injectable::required).flatMap(Arrays::stream),
+                     injectMethods.stream().map(Injectable::required).flatMap(Arrays::stream))
                  .flatMap(Function.identity())
                  .distinct()
                  .toList();
   }
 
-  private static InstanceTypeRef toInstanceTypeRef(Field f) {
-    return InstanceTypeRef.of(f.getGenericType(), getQualifier(f));
-  }
-
-  private static InstanceTypeRef toInstanceTypeRef(Parameter p) {
-    return InstanceTypeRef.of(p.getParameterizedType(), getQualifier(p));
-  }
-
-  private static Annotation getQualifier(AnnotatedElement annotated) {
-    List<Annotation> annotations = Arrays.stream(annotated.getAnnotations())
-                                         .filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).toList();
-    if(annotations.size() == 0){
-      return null;
-    }
-    if(annotations.size() > 1){
-      String annotationString = annotations.stream().map(Annotation::toString).collect(Collectors.joining(", "));
-      throw new IllegalComponentException("multi qualifier found in component: " + annotationString);
-    }
-    return annotations.get(0);
-  }
-
   private void injectedFieldShouldNotBeFinal() {
-    injectedFields.stream().filter(f -> Modifier.isFinal(f.getModifiers())).findAny().ifPresent(f -> {
-      throw new IllegalComponentException("Field '" + f.getName() + "' is failed to inject because it is final");
-    });
+    injectFields.stream().map(Injectable::element).filter(f -> Modifier.isFinal(f.getModifiers())).findAny()
+                .ifPresent(f -> {
+                  throw new IllegalComponentException(
+                      "Field '" + f.getName() + "' is failed to inject because it is final");
+                });
   }
 
   private void injectedMethodShouldNotHasTypeParameter() {
-    injectedMethods.stream().filter(m -> m.getTypeParameters().length > 0).findAny().ifPresent(m -> {
-      throw new IllegalComponentException(
-          "Method '" + m.getName() + "' is failed to inject because it has typed parameters");
-    });
+    injectMethods.stream().map(Injectable::element).filter(m -> m.getTypeParameters().length > 0).findAny()
+                 .ifPresent(m -> {
+                   throw new IllegalComponentException(
+                       "Method '" + m.getName() + "' is failed to inject because it has typed parameters");
+                 });
   }
 
   private static <T> List<T> traverse(Class<?> instanceType, BiFunction<List<T>, Class<?>, List<T>> finder) {
@@ -155,7 +134,7 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
   }
 
   private static <T extends AnnotatedElement> Stream<T> injectable(T[] elements) {
-    return Arrays.stream(elements).filter(f -> f.isAnnotationPresent(Inject.class));
+    return stream(elements).filter(f -> f.isAnnotationPresent(Inject.class));
   }
 
   private static <I> Constructor<I> getDefaultConstructor(Class<I> instanceType) {
@@ -164,22 +143,6 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
     } catch (NoSuchMethodException e) {
       throw new IllegalComponentException(e);
     }
-  }
-
-  private static Object getParameter(Container container, Field f) {
-    Type type = f.getGenericType();
-    return getParameterByType(container, type, getQualifier(f));
-  }
-
-  private static Object[] getParameters(Container container, Executable m) {
-    return Arrays.stream(m.getParameters()).map(p -> {
-      Type type = p.getParameterizedType();
-      return getParameterByType(container, type, getQualifier(p));
-    }).toArray();
-  }
-
-  private static Object getParameterByType(Container container, Type type, Annotation qualifier) {
-    return container.get(InstanceTypeRef.of(type, qualifier)).orElse(null);
   }
 
   private static <T> void instanceTypeShouldBeInstantiable(Class<T> instanceType) {
