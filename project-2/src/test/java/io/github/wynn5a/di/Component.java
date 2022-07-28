@@ -2,6 +2,7 @@ package io.github.wynn5a.di;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.function.Supplier;
 
 interface Component {
@@ -9,6 +10,11 @@ interface Component {
 }
 
 class SomeComponent implements Component {
+
+}
+
+@Singleton
+class SomeComponentWithScopedAnnotation implements Component {
 
 }
 
@@ -238,5 +244,27 @@ class ComponentWithQualifierFieldInject implements ComponentWithDependency {
   @Override
   public Dependency getDependency() {
     return dependency;
+  }
+}
+
+@Singleton
+class ScopedComponentWithDependency implements ComponentWithDependency{
+  @Inject
+  private Dependency dependency;
+
+  @Override
+  public Dependency getDependency() {
+    return null;
+  }
+}
+
+@Singleton
+class ScopedComponentWithSupplierDependency implements ComponentWithDependency{
+  @Inject
+  private Supplier<Dependency> dependency;
+
+  @Override
+  public Dependency getDependency() {
+    return null;
   }
 }

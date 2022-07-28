@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +60,9 @@ public class ContainerTest {
         Arguments.of(Named.of("Method", ComponentWithMethodInject.class)),
         Arguments.of(Named.of("MethodSupplier", ComponentWithSupplierMethodDependency.class)),
         Arguments.of(Named.of("FieldSupplier", ComponentWithSupplierFieldDependency.class)),
-        Arguments.of(Named.of("ConstructorSupplier", ComponentWithSupplierConstructorDependency.class))
+        Arguments.of(Named.of("ConstructorSupplier", ComponentWithSupplierConstructorDependency.class)),
+        Arguments.of(Named.of("Scoped", ScopedComponentWithDependency.class)),
+        Arguments.of(Named.of("ScopedAndSupplier", ScopedComponentWithSupplierDependency.class))
     );
   }
 
@@ -217,7 +222,8 @@ public class ContainerTest {
       //A -> @named("one")Dependency -> @Named("two")dependency
       @Test
       public void should_get_dependency_with_different_qualifier_in_dependencies() {
-        containerConfig.bind(Dependency.class, new Dependency() {}, new NamedQualifier("one"));
+        containerConfig.bind(Dependency.class, new Dependency() {
+        }, new NamedQualifier("one"));
         containerConfig.bind(Dependency.class, A.class, new NamedQualifier("two"));
         containerConfig.bind(Dependency.class, B.class);
 
@@ -377,17 +383,75 @@ public class ContainerTest {
         return (ParameterizedType) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
       }
     }
-
-  }
-
-  @Nested
-  public class DependenciesSelection {
-
   }
 
   @Nested
   public class LifecycleManagement {
 
+    @Test
+    public void should_not_be_singleton_when_binding_without_scope() {
+      containerConfig.bind(Component.class, SomeComponent.class);
+      Container container = containerConfig.getContainer();
+      assertNotSame(container.get(InstanceTypeRef.of(Component.class))
+                             .get(), container.get(InstanceTypeRef.of(Component.class)).get());
+    }
+
+    @Test
+    public void should_bind_with_singleton_scoped() {
+      containerConfig.bind(Component.class, SomeComponent.class, new SingletonLiteral());
+      Container container = containerConfig.getContainer();
+      assertSame(container.get(InstanceTypeRef.of(Component.class))
+                          .get(), container.get(InstanceTypeRef.of(Component.class)).get());
+    }
+
+    @Test
+    public void should_bind_scoped_annotated_component() {
+      containerConfig.bind(Component.class, SomeComponentWithScopedAnnotation.class);
+      Container container = containerConfig.getContainer();
+      assertSame(container.get(InstanceTypeRef.of(Component.class))
+                          .get(), container.get(InstanceTypeRef.of(Component.class)).get());
+    }
+
+    @Test
+    public void should_bind_with_customize_scope() {
+      containerConfig.scope(Pooled.class, PooledInstanceSupplier::new);
+      containerConfig.bind(Component.class, SomeComponent.class, new PooledLiteral());
+      Set<Object> set = IntStream.range(0, 5).mapToObj(i -> containerConfig.getContainer()
+                                                                             .get(InstanceTypeRef.of(Component.class)).get())
+                                   .collect(Collectors.toSet());
+
+      assertEquals(PooledInstanceSupplier.MAX, set.size());
+    }
+
+    @Nested
+    public class WithQualifier {
+
+      private NamedQualifier one = new NamedQualifier("One");
+
+      @Test
+      public void should_not_be_singleton_when_binding_without_scope() {
+        containerConfig.bind(Component.class, SomeComponent.class, one);
+        Container container = containerConfig.getContainer();
+        assertNotSame(container.get(InstanceTypeRef.of(Component.class, one))
+                               .get(), container.get(InstanceTypeRef.of(Component.class, one)).get());
+      }
+
+      @Test
+      public void should_bind_with_singleton_scoped() {
+        containerConfig.bind(Component.class, SomeComponent.class, new SingletonLiteral(), one);
+        Container container = containerConfig.getContainer();
+        assertSame(container.get(InstanceTypeRef.of(Component.class, one))
+                            .get(), container.get(InstanceTypeRef.of(Component.class, one)).get());
+      }
+
+      @Test
+      public void should_bind_scoped_annotated_component() {
+        containerConfig.bind(Component.class, SomeComponentWithScopedAnnotation.class, one);
+        Container container = containerConfig.getContainer();
+        assertSame(container.get(InstanceTypeRef.of(Component.class, one))
+                            .get(), container.get(InstanceTypeRef.of(Component.class, one)).get());
+      }
+    }
   }
 }
 

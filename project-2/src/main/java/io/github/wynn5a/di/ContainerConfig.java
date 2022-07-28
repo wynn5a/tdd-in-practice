@@ -4,43 +4,69 @@ import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
 import io.github.wynn5a.di.exception.IllegalQualifierException;
 import jakarta.inject.Qualifier;
+import jakarta.inject.Scope;
+import jakarta.inject.Singleton;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ContainerConfig {
 
   private final Map<InstanceType, InstanceSupplier<?>> instanceSuppliers = new HashMap<>();
+  private final Map<Class<?>, Function<InstanceSupplier<?>, InstanceSupplier<?>>> scopes = new HashMap<>();
 
-  public <T> void bind(Class<T> type, T instance, Annotation... qualifiers) {
-    if (qualifiers.length == 0) {
+  public ContainerConfig() {
+    scopes.put(Singleton.class, SingletonInstanceSupplier::new);
+  }
+
+  public <T> void bind(Class<T> type, T instance, Annotation... annotations) {
+    checkAnnotations(annotations);
+    List<Annotation> qualifiers = getQualifiers(annotations);
+    if (qualifiers.size() == 0) {
       instanceSuppliers.put(new InstanceType(type, null), c -> instance);
       return;
     }
-    checkQualifiers(qualifiers);
-    for (Annotation qualifier : qualifiers) {
-      instanceSuppliers.put(new InstanceType(type, qualifier), c -> instance);
-    }
+    qualifiers.forEach(q -> instanceSuppliers.put(new InstanceType(type, q), c -> instance));
   }
 
-  public <T, I extends T> void bind(Class<T> type, Class<I> instanceType, Annotation... qualifiers) {
-    if (qualifiers.length == 0) {
-      instanceSuppliers.put(new InstanceType(type, null), new InjectedInstanceSupplier<>(instanceType));
+  public <T, I extends T> void bind(Class<T> type, Class<I> instanceType, Annotation... annotations) {
+    checkAnnotations(annotations);
+    List<Annotation> qualifiers = getQualifiers(annotations);
+    Optional<Annotation> scope = getScopeAnnotation(annotations, instanceType);
+
+    InjectedInstanceSupplier<I> injectedInstanceSupplier = new InjectedInstanceSupplier<>(instanceType);
+    InstanceSupplier<I> supplier = scope.map(s -> (InstanceSupplier<I>) scopes.get(s.annotationType())
+                                                                              .apply(injectedInstanceSupplier))
+                                        .orElse(injectedInstanceSupplier);
+
+    if (qualifiers.size() == 0) {
+      instanceSuppliers.put(new InstanceType(type, null), supplier);
       return;
     }
-
-    checkQualifiers(qualifiers);
-    for (Annotation qualifier : qualifiers) {
-      instanceSuppliers.put(new InstanceType(type, qualifier), new InjectedInstanceSupplier<>(instanceType));
-    }
+    qualifiers.forEach(q ->
+        instanceSuppliers.put(new InstanceType(type, q), supplier));
   }
 
-  private void checkQualifiers(Annotation[] qualifiers) {
-    if (Arrays.stream(qualifiers).anyMatch(q -> !q.annotationType().isAnnotationPresent(Qualifier.class))) {
+  private Optional<Annotation> getScopeAnnotation(Annotation[] annotations, Class<?> instanceType) {
+    return Arrays.stream(annotations).filter(a -> a.annotationType().isAnnotationPresent(Scope.class))
+                 .findFirst().or(() -> Arrays.stream(instanceType.getDeclaredAnnotations())
+                                             .filter(a -> a.annotationType().isAnnotationPresent(Scope.class))
+                                             .findFirst());
+  }
+
+  private static List<Annotation> getQualifiers(Annotation[] annotations) {
+    return Arrays.stream(annotations).filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).toList();
+  }
+
+  private void checkAnnotations(Annotation[] qualifiers) {
+    if (Arrays.stream(qualifiers).map(Annotation::annotationType)
+              .anyMatch(q -> !q.isAnnotationPresent(Qualifier.class) && !q.isAnnotationPresent(Scope.class))) {
       throw new IllegalQualifierException();
     }
   }
@@ -87,5 +113,10 @@ public class ContainerConfig {
         visiting.pop();
       }
     }
+  }
+
+  public <ScopeType extends Annotation> void scope(Class<ScopeType> scope,
+                                                   Function<InstanceSupplier<?>, InstanceSupplier<?>> supplier) {
+    scopes.put(scope, supplier);
   }
 }
