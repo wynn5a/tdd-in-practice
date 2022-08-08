@@ -1,7 +1,10 @@
 package io.github.wynn5a.di;
 
+import static java.util.List.of;
+
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.IllegalQualifierException;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Scope;
@@ -13,16 +16,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * TDD 过程中无需提前优化和重构，而是等到功能告一段落之后，在进行重构，这样能够避免局部优化导致坏味道藏匿起来
+ */
 public class ContainerConfig {
 
   private final Map<InstanceType, InstanceSupplier<?>> instanceSuppliers = new HashMap<>();
-  private final Map<Class<?>, Function<InstanceSupplier<?>, InstanceSupplier<?>>> scopes = new HashMap<>();
+  private final Map<Class<?>, ScopeSupplier> scopeSupplier = new HashMap<>();
 
   public ContainerConfig() {
-    scopes.put(Singleton.class, SingletonInstanceSupplier::new);
+    scopeSupplier.put(Singleton.class, SingletonInstanceSupplier::new);
   }
 
   public <T> void bind(Class<T> type, T instance, Annotation... annotations) {
@@ -36,28 +43,50 @@ public class ContainerConfig {
   }
 
   public <T, I extends T> void bind(Class<T> type, Class<I> instanceType, Annotation... annotations) {
-    checkAnnotations(annotations);
-    List<Annotation> qualifiers = getQualifiers(annotations);
-    Optional<Annotation> scope = getScopeAnnotation(annotations, instanceType);
-
-    InjectedInstanceSupplier<I> injectedInstanceSupplier = new InjectedInstanceSupplier<>(instanceType);
-    InstanceSupplier<I> supplier = scope.map(s -> (InstanceSupplier<I>) scopes.get(s.annotationType())
-                                                                              .apply(injectedInstanceSupplier))
-                                        .orElse(injectedInstanceSupplier);
-
+    Map<Class<?>, List<Annotation>> annotationGroups = Arrays.stream(annotations)
+                                                             .collect(Collectors.groupingBy(this::byType, Collectors.toList()));
+    if (annotationGroups.containsKey(IllegalType.class)) {
+      throw new IllegalComponentException("Illegal annotations were found");
+    }
+    List<Annotation> qualifiers = annotationGroups.getOrDefault(Qualifier.class, of());
+    InstanceSupplier<I> supplier = createScopedSupplier(instanceType, annotationGroups.getOrDefault(Scope.class, of()));
     if (qualifiers.size() == 0) {
       instanceSuppliers.put(new InstanceType(type, null), supplier);
       return;
     }
-    qualifiers.forEach(q ->
-        instanceSuppliers.put(new InstanceType(type, q), supplier));
+    qualifiers.forEach(q -> instanceSuppliers.put(new InstanceType(type, q), supplier));
   }
 
-  private Optional<Annotation> getScopeAnnotation(Annotation[] annotations, Class<?> instanceType) {
-    return Arrays.stream(annotations).filter(a -> a.annotationType().isAnnotationPresent(Scope.class))
-                 .findFirst().or(() -> Arrays.stream(instanceType.getDeclaredAnnotations())
-                                             .filter(a -> a.annotationType().isAnnotationPresent(Scope.class))
-                                             .findFirst());
+  private <I> InstanceSupplier<I> createScopedSupplier(Class<I> instanceType, List<Annotation> scopes) {
+    List<Annotation> scopesFromType = scopeFrom(instanceType);
+    if (scopes.size() > 1 || scopesFromType.size() > 1) {
+      throw new IllegalComponentException("Only one scope annotation is supported");
+    }
+    Optional<Annotation> scope = scopes.stream().findFirst().or(() -> scopesFromType.stream().findFirst());
+    InjectedInstanceSupplier<I> instanceSupplier = new InjectedInstanceSupplier<>(instanceType);
+    return scope.map(s -> {
+      Class<? extends Annotation> key = s.annotationType();
+      if (!scopeSupplier.containsKey(key)) {
+        throw new IllegalComponentException("Scope instance supplier is  undefined for scope: " + s);
+      }
+      return this.scopeSupplier.get(key).create(instanceSupplier);
+    }).orElse(instanceSupplier);
+  }
+
+  private static <I> List<Annotation> scopeFrom(Class<I> instanceType) {
+    return Arrays.stream(instanceType.getDeclaredAnnotations())
+                 .filter(a -> a.annotationType().isAnnotationPresent(Scope.class))
+                 .toList();
+  }
+
+  private Class<?> byType(Annotation annotation) {
+    Class<?> type = annotation.annotationType();
+    return Stream.of(Scope.class, Qualifier.class).filter(type::isAnnotationPresent).findFirst()
+                 .orElse(IllegalType.class);
+  }
+
+  @interface IllegalType {
+
   }
 
   private static List<Annotation> getQualifiers(Annotation[] annotations) {
@@ -116,7 +145,8 @@ public class ContainerConfig {
   }
 
   public <ScopeType extends Annotation> void scope(Class<ScopeType> scope,
-                                                   Function<InstanceSupplier<?>, InstanceSupplier<?>> supplier) {
-    scopes.put(scope, supplier);
+                                                   ScopeSupplier supplier) {
+    scopeSupplier.put(scope, supplier);
   }
 }
+

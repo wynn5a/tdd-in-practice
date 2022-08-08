@@ -12,8 +12,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
+import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.IllegalQualifierException;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -327,7 +329,7 @@ public class ContainerTest {
     @Test
     public void should_raise_exception_when_illegal_qualifier_provided_to_type() {
       InvalidQualifier bad = new InvalidQualifier();
-      assertThrows(IllegalQualifierException.class, () -> containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, bad));
+      assertThrows(IllegalComponentException.class, () -> containerConfig.bind(ComponentWithDependency.class, ComponentWithConstructorDependency.class, bad));
     }
 
     @Test
@@ -417,16 +419,44 @@ public class ContainerTest {
       containerConfig.scope(Pooled.class, PooledInstanceSupplier::new);
       containerConfig.bind(Component.class, SomeComponent.class, new PooledLiteral());
       Set<Object> set = IntStream.range(0, 5).mapToObj(i -> containerConfig.getContainer()
-                                                                             .get(InstanceTypeRef.of(Component.class)).get())
-                                   .collect(Collectors.toSet());
+                                                                           .get(InstanceTypeRef.of(Component.class))
+                                                                           .get())
+                                 .collect(Collectors.toSet());
 
       assertEquals(PooledInstanceSupplier.MAX, set.size());
+    }
+
+    @Test
+    public void should_throw_exception_when_giving_multi_scope_annotation() {
+      assertThrows(IllegalComponentException.class,
+          () -> containerConfig.bind(Component.class, SomeComponent.class, new SingletonLiteral(), new PooledLiteral()));
+    }
+
+    @Test
+    public void should_throw_exception_when_multi_scope_annotated() {
+      assertThrows(IllegalComponentException.class, () -> containerConfig.bind(Component.class, ComponentWithMultiScopeAnnotation.class));
+    }
+
+    @Singleton
+    @Pooled
+    static class ComponentWithMultiScopeAnnotation implements Component {
+
+    }
+
+    @Test
+    public void should_throw_exception_when_giving_scope_undefined() {
+      assertThrows(IllegalComponentException.class, () -> containerConfig.bind(Component.class, ComponentWithUndefinedScopeAnnotation.class));
+    }
+
+    @Pooled
+    static class ComponentWithUndefinedScopeAnnotation implements Component {
+
     }
 
     @Nested
     public class WithQualifier {
 
-      private NamedQualifier one = new NamedQualifier("One");
+      private final NamedQualifier one = new NamedQualifier("One");
 
       @Test
       public void should_not_be_singleton_when_binding_without_scope() {
