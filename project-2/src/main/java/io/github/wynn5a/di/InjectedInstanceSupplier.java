@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -122,8 +123,16 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   private static boolean isOverridden(Class<?> instanceType, Method method, Class<?> currentType) {
     try {
-      return instanceType.getMethod(method.getName(), method.getParameterTypes()).getDeclaringClass() != currentType;
+      System.out.println("----start");
+      System.out.println(instanceType.getName());
+      System.out.println(method.getName());
+      System.out.println(stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining("    ")));
+      System.out.println(currentType.getName());
+      System.out.println("----end");
+      Method instanceMethod = instanceType.getDeclaredMethod(method.getName(), method.getParameterTypes());
+      return instanceMethod.getDeclaringClass() != currentType;
     } catch (NoSuchMethodException e) {
+//      return true;
       throw new RuntimeException(e);
     }
   }

@@ -53,6 +53,9 @@ public class InstanceTypeRef<T> {
     }
     return new InstanceTypeRef<>((Class<?>) type);
   }
+  public static <T> InstanceTypeRef<T> of(Class<T> type) {
+    return new InstanceTypeRef<>(type);
+  }
 
   public static InstanceTypeRef of(Type type, Annotation qualifier) {
     if (type instanceof ParameterizedType) {
