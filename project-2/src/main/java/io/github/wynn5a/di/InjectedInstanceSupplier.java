@@ -61,14 +61,19 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
     if (allConstructors.size() > 1) {
       throw new MultiInjectAnnotationFoundException();
     }
-    return Injectable.of((Constructor<T>) allConstructors.stream().findFirst()
-                                                         .orElseGet(() -> getDefaultConstructor(instanceType)));
+    Constructor<T> constructor = (Constructor<T>) allConstructors.stream().findFirst()
+                                                                 .orElseGet(() -> getDefaultConstructor(instanceType));
+    constructor.setAccessible(true);
+    return Injectable.of(constructor);
   }
 
   @Override
   public T get(Container container) {
+    String deps = "";
     try {
-      T t = injectConstructor.element().newInstance(injectConstructor.getDependencies(container));
+      Object[] dependencies = injectConstructor.getDependencies(container);
+      deps = stream(dependencies).map(Object::toString).collect(Collectors.joining(", "));
+      T t = injectConstructor.element().newInstance(dependencies);
       for (Injectable<Field> i : injectFields) {
         Field f = i.element();
         f.setAccessible(true);
@@ -81,6 +86,8 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
       }
       return t;
     } catch (Exception e) {
+      System.out.println(injectConstructor.element().getName());
+      System.out.println(deps);
       throw new RuntimeException(e);
     }
   }
@@ -123,17 +130,10 @@ public class InjectedInstanceSupplier<T> implements InstanceSupplier<T> {
 
   private static boolean isOverridden(Class<?> instanceType, Method method, Class<?> currentType) {
     try {
-      System.out.println("----start");
-      System.out.println(instanceType.getName());
-      System.out.println(method.getName());
-      System.out.println(stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining("    ")));
-      System.out.println(currentType.getName());
-      System.out.println("----end");
-      Method instanceMethod = instanceType.getDeclaredMethod(method.getName(), method.getParameterTypes());
-      return instanceMethod.getDeclaringClass() != currentType;
+      Method m = instanceType.getDeclaredMethod(method.getName(), method.getParameterTypes());
+      return m.getDeclaringClass() != currentType;
     } catch (NoSuchMethodException e) {
-//      return true;
-      throw new RuntimeException(e);
+      return false;
     }
   }
 

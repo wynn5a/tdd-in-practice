@@ -14,6 +14,7 @@ import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.MultiInjectAnnotationFoundException;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.inject.Provider;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,9 @@ public class InjectionTest {
   private final Dependency dependency = mock(Dependency.class);
 
   private final Supplier<Dependency> dependencySupplier = mock(Supplier.class);
+  private final Provider<Dependency> dependencyProvider = mock(Provider.class);
   private ParameterizedType supplierType;
+  private ParameterizedType providerType;
 
   @BeforeEach
   public void setup() throws NoSuchFieldException {
@@ -41,6 +44,11 @@ public class InjectionTest {
                                                          .getGenericType();
     when(container.get(eq(InstanceTypeRef.of(supplierType)))).thenReturn(Optional.of(dependencySupplier));
     when(container.get(InstanceTypeRef.of(Dependency.class, null))).thenReturn(Optional.of(dependency));
+
+    providerType = (ParameterizedType) InjectionTest.this.getClass()
+                                                         .getDeclaredField("dependencyProvider")
+                                                         .getGenericType();
+    when(container.get(eq(InstanceTypeRef.of(providerType)))).thenReturn(Optional.of(dependencyProvider));
   }
 
   private final Container container = mock(Container.class);
@@ -73,6 +81,14 @@ public class InjectionTest {
         assertNotNull(component);
         Supplier<Dependency> got = component.getDependency();
         assertSame(dependencySupplier, got);
+      }
+
+      @Test
+      public void should_inject_by_constructor_provider() {
+        ComponentWithProviderDependency component = new InjectedInstanceSupplier<>(ComponentWithProviderDependency.class).get(container);
+        assertNotNull(component);
+        Provider<Dependency> got = component.dependencyProvider();
+        assertSame(dependencyProvider, got);
       }
 
       @Test
@@ -384,6 +400,17 @@ class ComponentWithMultiQualifierMethodInject {
   @Inject
   public void install(@Named("one") @Two Dependency dependency) {
 
+  }
+}
+
+class ComponentWithProviderDependency{
+  Provider<Dependency> dependencyProvider;
+  @Inject
+  ComponentWithProviderDependency(Provider<Dependency> dependencyProvider){
+    this.dependencyProvider = dependencyProvider;
+  }
+  Provider<Dependency> dependencyProvider(){
+    return dependencyProvider;
   }
 }
 

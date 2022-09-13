@@ -1,6 +1,7 @@
 package io.github.wynn5a.di.exception;
 
 import io.github.wynn5a.di.InstanceType;
+import java.util.StringJoiner;
 
 /**
  * @author wynn5a
@@ -23,5 +24,13 @@ public class DependencyNotFoundException extends RuntimeException {
 
   public InstanceType getComponent() {
     return component;
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", DependencyNotFoundException.class.getSimpleName() + "[", "]")
+        .add("dependency=" + dependency)
+        .add("component=" + component)
+        .toString();
   }
 }

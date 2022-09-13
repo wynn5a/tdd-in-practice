@@ -10,6 +10,7 @@ import io.github.wynn5a.di.exception.CyclicDependencyFoundException;
 import io.github.wynn5a.di.exception.DependencyNotFoundException;
 import io.github.wynn5a.di.exception.IllegalComponentException;
 import io.github.wynn5a.di.exception.IllegalQualifierException;
+import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Scope;
 import jakarta.inject.Singleton;
@@ -125,16 +126,15 @@ public class ContainerConfig {
 
       @Override
       public Optional get(InstanceTypeRef instanceTypeRef) {
-        if (instanceTypeRef.instanceType().qualifier() != null) {
-          return Optional.ofNullable(getSupplier(instanceTypeRef)).map(s -> s.get(this));
-        }
-
         InstanceSupplier<?> instanceSupplier = getSupplier(instanceTypeRef);
         if (instanceTypeRef.isContainerType()) {
-          if (instanceTypeRef.getContainerType() != Supplier.class) {
-            return Optional.empty();
+          if (Supplier.class == instanceTypeRef.getContainerType()){
+            return Optional.ofNullable(instanceSupplier).map(s -> (Supplier<Object>) () -> s.get(this));
           }
-          return Optional.ofNullable(instanceSupplier).map(s -> (Supplier<Object>) () -> s.get(this));
+          if(Provider.class == instanceTypeRef.getContainerType()){
+            return Optional.ofNullable(instanceSupplier).map(s -> (Provider<Object>) () -> s.get(this));
+          }
+          return Optional.empty();
         }
         return Optional.ofNullable(instanceSupplier).map(s -> (Object) s.get(this));
       }

@@ -1,6 +1,7 @@
 package io.github.wynn5a.di;
 
 import jakarta.inject.Named;
+import java.util.Optional;
 import junit.framework.Test;
 import org.atinject.tck.Tck;
 import org.atinject.tck.auto.Car;
@@ -46,7 +47,9 @@ public class JakartaInjectTest {
       Cupholder cupholder;
     });
 
-    Car car = containerConfig.getContainer().get(InstanceTypeRef.of(Car.class)).get();
+    Container container = containerConfig.getContainer();
+    Optional<Car> optionalCar = container.get(InstanceTypeRef.of(Car.class));
+    Car car = optionalCar.get();
     return Tck.testsFor(car, false, true);
   }
 }
