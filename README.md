@@ -21,12 +21,8 @@
 
 ## Project 2
 
-第一个场景是支撑 RESTful API 的开发框架，
+第一个场景是支撑 RESTful API 的开发框架，功能范围包含一个依赖注入容器（Dependency Injection Container/IoC Container)。
 
-你可以将它想象成 mini 版本的 Dropwizard 或者 Spring MVC。
-
-功能范围包含一个依赖注入容器（Dependency Injection Container/IoC Container）和一个支持 RESTful API 构建的 Web 框架。
-
-我们会以 Jakarta EE 中的 Jakarta Dependency Injection 和 Jakarta RESTful Web Services 为主要功能参考，并对其适当简化，以完成我们的目标。
+我们会以 Jakarta EE 中的 Jakarta Dependency Injection 为主要功能参考，并对其适当简化，以完成我们的目标。
 
 ### 任务拆解，参看 Project-2 README
